@@ -1666,10 +1666,10 @@
     const SUPABASE_TABLE_NAME = 'attendance_data';
     const SUPABASE_ROW_ID = 'main_attendance_state';
 
-    // 기본 설정값 (사용자가 코드에 직접 넣거나 모달에서 입력 가능)
+    // 기본 설정값 (사용자가 제공한 Supabase 접속 정보 기본 탑재)
     const DEFAULT_SUPABASE_CONFIG = {
-      url: "",  // 예: "https://your-project.supabase.co"
-      anonKey: "" // 예: "eyJhbGciOi..."
+      url: "https://bmmfqsxkakbpjnfzwnsp.supabase.co",
+      anonKey: "sb_publishable_j4rhbsBsLAtPKZZh6Cs-Vg_zJ70oNoO"
     };
 
     let supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
@@ -1682,10 +1682,17 @@
       const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
       if (stored) {
         try {
-          supabaseConfig = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          if (parsed && parsed.url && parsed.anonKey) {
+            supabaseConfig = parsed;
+          } else {
+            supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
+          }
         } catch (e) {
           supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
         }
+      } else {
+        supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
       }
     }
 
@@ -3354,9 +3361,19 @@
       switchRole('kiosk');
       
       // Supabase 클라우드 동기화 비동기 초기화
-      initSupabaseClient().then(connected => {
+      initSupabaseClient().then(async connected => {
         if (connected) {
-          loadData(); // 클라우드 데이터 우선 동기화
+          const cloudData = await fetchFromSupabase();
+          if (cloudData) {
+            appData = cloudData;
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            initAppUI();
+            showToast('⚡ Supabase 클라우드와 실시간 연결되었습니다.');
+          } else {
+            // 클라우드에 아직 데이터가 없으면 현재 데이터로 최초 시드 업로드
+            await syncToSupabase();
+            showToast('⚡ Supabase에 초기 출석 데이터가 업로드되었습니다.');
+          }
         }
       });
     }

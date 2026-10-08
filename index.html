@@ -1,0 +1,3043 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>노인복지관 배움터 전자출석부</title>
+  <!-- SheetJS CDN for Excel parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Google Fonts: Nunito & Noto Sans KR -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+
+  <style>
+    /* ==========================================================================
+       DESIGN SYSTEM TOKENS: SOFT SORA BLUE THEME (소라색 테마 + 통통한 라운드)
+       ========================================================================== */
+    :root {
+      /* Sora Blue Palette (소라색) */
+      --color-sora: #4fa8ea;
+      --color-sora-shadow: #3488c5;
+      --color-sora-hover: #3ca0eb;
+      --color-sora-light: #eef6fd;
+      --color-sora-subtle: #d8ecfc;
+      --color-sora-deep: #1e6fae;
+
+      /* Neutral Palette */
+      --color-paper-white: #ffffff;
+      --color-page-bg: #f8fafc;
+      --color-charcoal: #2d3748;
+      --color-pencil-gray: #64748b;
+      --color-faded-gray: #cbd5e1;
+      --color-border-light: #e2e8f0;
+      
+      /* Status Palette */
+      --color-danger: #ef4444;
+      --color-danger-shadow: #dc2626;
+      --color-success: #10b981;
+      --color-success-light: #ecfdf5;
+
+      /* Typography */
+      --font-family-display: "Nunito", "Noto Sans KR", -apple-system, sans-serif;
+      --font-family-body: "Noto Sans KR", "Nunito", -apple-system, sans-serif;
+
+      --text-caption: 13px;
+      --text-nav-label: 15px;
+      --text-body: 16px;
+      --text-subheading: 20px;
+      --text-heading-sm: 26px;
+      --text-heading: 34px;
+      --text-display: 46px;
+
+      /* Shapes & Radii (통통하고 둥글둥글한 라운드 14px~22px) */
+      --radius-sm: 10px;
+      --radius-default: 16px;
+      --radius-lg: 22px;
+      --radius-pill: 9999px;
+
+      /* Spacing */
+      --spacing-8: 8px;
+      --spacing-12: 12px;
+      --spacing-16: 16px;
+      --spacing-24: 24px;
+      --spacing-32: 32px;
+    }
+
+    /* Reset & Base */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-family-body);
+      background-color: var(--color-page-bg);
+      color: var(--color-charcoal);
+      line-height: 1.5;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==========================================================================
+       HEADER & NAVIGATION (소라색 상단바)
+       ========================================================================== */
+    header.site-header {
+      background: var(--color-paper-white);
+      border-bottom: 2px solid var(--color-border-light);
+      padding: 14px 28px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .brand-area {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      cursor: pointer;
+    }
+
+    .mascot-avatar {
+      width: 48px;
+      height: 48px;
+      border-radius: var(--radius-default);
+      background: var(--color-sora);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+      box-shadow: 0 4px 0 var(--color-sora-shadow);
+      user-select: none;
+      transition: transform 0.12s ease;
+    }
+
+    .mascot-avatar:hover {
+      transform: scale(1.05) rotate(-3deg);
+    }
+
+    .brand-text h1 {
+      font-family: var(--font-family-display);
+      font-size: 21px;
+      font-weight: 900;
+      color: var(--color-sora-deep);
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-text p {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-pencil-gray);
+      letter-spacing: -0.01em;
+    }
+
+    /* Role Switcher Tabs (키오스크 & 관리자만) */
+    .role-tabs {
+      display: flex;
+      gap: 8px;
+      background: var(--color-sora-light);
+      padding: 6px;
+      border-radius: var(--radius-lg);
+    }
+
+    .role-btn {
+      background: transparent;
+      border: 2px solid transparent;
+      padding: 9px 20px;
+      border-radius: var(--radius-default);
+      font-family: var(--font-family-display);
+      font-size: 15px;
+      font-weight: 800;
+      cursor: pointer;
+      color: var(--color-pencil-gray);
+      transition: all 0.15s ease;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .role-btn.active {
+      background: var(--color-paper-white);
+      color: var(--color-sora-deep);
+      border-color: var(--color-sora-subtle);
+      box-shadow: 0 3px 0 var(--color-sora-subtle);
+      transform: translateY(-1px);
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    /* ==========================================================================
+       STICKER 3D BUTTONS (소라색 테마)
+       ========================================================================== */
+    .btn {
+      font-family: var(--font-family-display);
+      font-size: 15px;
+      font-weight: 800;
+      padding: 10px 20px;
+      border-radius: var(--radius-default);
+      border: 2px solid var(--color-border-light);
+      background: var(--color-paper-white);
+      color: var(--color-charcoal);
+      cursor: pointer;
+      box-shadow: 0 3px 0 var(--color-border-light);
+      transition: transform 0.1s ease, box-shadow 0.1s ease, background 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+      outline: none;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: #fafafa;
+    }
+
+    .btn:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--color-border-light);
+    }
+
+    /* Sora Primary Button */
+    .btn-sora {
+      background: var(--color-sora);
+      border-color: var(--color-sora);
+      color: var(--color-paper-white);
+      box-shadow: 0 4px 0 var(--color-sora-shadow);
+    }
+
+    .btn-sora:hover {
+      background: var(--color-sora-hover);
+    }
+
+    .btn-sora:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--color-sora-shadow);
+    }
+
+    /* Danger Button */
+    .btn-danger {
+      background: var(--color-danger);
+      border-color: var(--color-danger);
+      color: #fff;
+      box-shadow: 0 4px 0 var(--color-danger-shadow);
+    }
+
+    .btn-danger:active {
+      transform: translateY(2px);
+      box-shadow: 0 2px 0 var(--color-danger-shadow);
+    }
+
+    .btn-sm {
+      padding: 6px 14px;
+      font-size: 13px;
+      border-radius: var(--radius-sm);
+    }
+
+    .btn-lg {
+      padding: 16px 34px;
+      font-size: 20px;
+      border-radius: var(--radius-default);
+    }
+
+    /* ==========================================================================
+       PROGRAM SELECTOR BAR
+       ========================================================================== */
+    main.main-content {
+      flex: 1;
+      max-width: 1240px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .program-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-default);
+      padding: 16px 22px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 0 var(--color-border-light);
+    }
+
+    .program-selector-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .bar-label {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--color-pencil-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    select, input[type="text"], input[type="date"], input[type="time"], input[type="number"], input[type="password"], textarea {
+      font-family: var(--font-family-body);
+      font-size: 15px;
+      font-weight: 600;
+      padding: 9px 14px;
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-default);
+      background: var(--color-paper-white);
+      color: var(--color-charcoal);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    select:focus, input:focus, textarea:focus {
+      border-color: var(--color-sora);
+    }
+
+    /* View Switch Panels */
+    .view-panel {
+      display: none;
+    }
+
+    .view-panel.active {
+      display: block;
+      animation: popIn 0.2s ease-out;
+    }
+
+    @keyframes popIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* Card Panels */
+    .card {
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 0 var(--color-border-light);
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--color-border-light);
+    }
+
+    .card-title {
+      font-family: var(--font-family-display);
+      font-size: 22px;
+      font-weight: 900;
+      color: var(--color-charcoal);
+    }
+
+    /* ==========================================================================
+       VIEW 1: PARTICIPANT ATTENDANCE KIOSK (소라색 & 책/연필 테마)
+       ========================================================================== */
+    .kiosk-hero {
+      position: relative;
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      padding: 32px 36px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 0 var(--color-border-light);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      overflow: hidden;
+    }
+
+    .kiosk-hero-text {
+      max-width: 720px;
+      z-index: 2;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--color-sora-light);
+      color: var(--color-sora-deep);
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 14px;
+      border-radius: var(--radius-pill);
+      margin-bottom: 12px;
+    }
+
+    .kiosk-instruction {
+      font-family: var(--font-family-display);
+      font-size: 32px;
+      font-weight: 900;
+      color: var(--color-charcoal);
+      line-height: 1.25;
+    }
+
+    .kiosk-instruction span.accent-sora {
+      color: var(--color-sora);
+    }
+
+    .kiosk-subtext {
+      font-size: 18px;
+      font-weight: 500;
+      color: var(--color-pencil-gray);
+      margin-top: 8px;
+    }
+
+    .kiosk-mascot-art {
+      font-size: 78px;
+      line-height: 1;
+      padding-left: 20px;
+      user-select: none;
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      animation: floatArt 3s ease-in-out infinite;
+    }
+
+    @keyframes floatArt {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-7px); }
+    }
+
+    .kiosk-search-box {
+      margin-top: 20px;
+      display: flex;
+      gap: 10px;
+      max-width: 480px;
+    }
+
+    .kiosk-search-box input {
+      flex: 1;
+      font-size: 18px;
+      padding: 12px 18px;
+      border-radius: var(--radius-default);
+    }
+
+    /* Participant Tile Grid */
+    .kiosk-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(215px, 1fr));
+      gap: 16px;
+      margin-top: 20px;
+    }
+
+    .participant-tile {
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-default);
+      box-shadow: 0 4px 0 var(--color-border-light);
+      padding: 24px 16px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.12s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 140px;
+      user-select: none;
+    }
+
+    .participant-tile:hover {
+      border-color: var(--color-sora);
+      box-shadow: 0 4px 0 var(--color-sora-shadow);
+      transform: translateY(-2px);
+    }
+
+    .participant-tile:active {
+      transform: translateY(2px);
+      box-shadow: 0 1px 0 var(--color-sora-shadow);
+    }
+
+    /* Attended State - Sora Blue Sticker */
+    .participant-tile.attended {
+      background: #f1f8fe;
+      border-color: var(--color-sora);
+      box-shadow: 0 4px 0 var(--color-sora-shadow);
+    }
+
+    /* Dropped State */
+    .participant-tile.dropped {
+      opacity: 0.6;
+      background: #fafafa;
+      border-style: dashed;
+    }
+
+    .tile-name {
+      font-family: var(--font-family-display);
+      font-size: 28px;
+      font-weight: 900;
+      color: var(--color-charcoal);
+      margin-bottom: 4px;
+    }
+
+    .tile-id {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-sora-deep);
+      background: var(--color-sora-light);
+      padding: 2px 10px;
+      border-radius: var(--radius-pill);
+      display: inline-block;
+      margin-bottom: 8px;
+    }
+
+    .tile-badge {
+      font-family: var(--font-family-display);
+      font-size: 14px;
+      font-weight: 800;
+      padding: 5px 12px;
+      border-radius: var(--radius-pill);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      margin-top: 4px;
+    }
+
+    .badge-attended {
+      background: var(--color-sora-subtle);
+      color: var(--color-sora-deep);
+    }
+
+    .badge-pending {
+      background: #f1f5f9;
+      color: var(--color-pencil-gray);
+    }
+
+    .badge-absent {
+      background: #fee7e7;
+      color: var(--color-danger);
+    }
+
+    /* ==========================================================================
+       MODALS & SIGNATURE CANVAS
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(30, 41, 59, 0.45);
+      backdrop-filter: blur(3px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-overlay.hidden {
+      display: none;
+    }
+
+    .modal-content {
+      background: var(--color-paper-white);
+      border: 3px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+      width: 100%;
+      max-width: 580px;
+      padding: 32px;
+      position: relative;
+      animation: popIn 0.18s ease-out;
+    }
+
+    .modal-header {
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--color-border-light);
+    }
+
+    .modal-title {
+      font-family: var(--font-family-display);
+      font-size: 26px;
+      font-weight: 900;
+      color: var(--color-charcoal);
+    }
+
+    /* Signature Canvas Area */
+    .signature-wrap {
+      border: 3px dashed var(--color-sora);
+      border-radius: var(--radius-default);
+      background: #fbfdff;
+      position: relative;
+      margin: 18px 0;
+      touch-action: none;
+      overflow: hidden;
+    }
+
+    #sigCanvas {
+      width: 100%;
+      height: 250px;
+      display: block;
+      cursor: crosshair;
+    }
+
+    .sig-guide-text {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: var(--color-faded-gray);
+      font-size: 20px;
+      font-weight: 700;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    /* ==========================================================================
+       VIEW 3: ADMIN MANAGEMENT & PRINT (A4)
+       ========================================================================== */
+    .admin-subtabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 20px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .admin-subtab-group {
+      display: flex;
+      gap: 8px;
+    }
+
+    .admin-subtab-btn {
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      box-shadow: 0 3px 0 var(--color-border-light);
+      padding: 10px 18px;
+      font-family: var(--font-family-display);
+      font-size: 15px;
+      font-weight: 800;
+      color: var(--color-pencil-gray);
+      cursor: pointer;
+      border-radius: var(--radius-default);
+      transition: all 0.15s ease;
+    }
+
+    .admin-subtab-btn.active {
+      background: var(--color-sora);
+      border-color: var(--color-sora);
+      color: var(--color-paper-white);
+      box-shadow: 0 3px 0 var(--color-sora-shadow);
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 16px;
+      margin-bottom: 20px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .form-group label {
+      font-size: 13px;
+      font-weight: 800;
+      color: var(--color-charcoal);
+    }
+
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      align-items: center;
+      margin-top: 6px;
+    }
+
+    .checkbox-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* Session List (회차 및 휴강 관리) */
+    .session-list-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .session-item-card {
+      background: #fafbfc;
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-default);
+      box-shadow: 0 2px 0 var(--color-border-light);
+      padding: 14px;
+    }
+
+    .session-item-card.is-holiday {
+      background: #fff5f5;
+      border-color: #ffd1d1;
+    }
+
+    /* Table System */
+    .table-container {
+      overflow-x: auto;
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-default);
+    }
+
+    table.data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 15px;
+    }
+
+    table.data-table th, table.data-table td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--color-border-light);
+    }
+
+    table.data-table th {
+      background: #f8fafc;
+      font-family: var(--font-family-display);
+      font-weight: 800;
+      color: var(--color-pencil-gray);
+      font-size: 13px;
+      letter-spacing: 0.02em;
+    }
+
+    table.data-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .sig-thumbnail {
+      max-width: 90px;
+      max-height: 40px;
+      border: 1px solid var(--color-border-light);
+      border-radius: 6px;
+      background: #fff;
+      display: block;
+    }
+
+    /* ==========================================================================
+       A4 LANDSCAPE PRINT SHEET (표준 공문서 규격 + 선명한 인쇄)
+       ========================================================================== */
+    .print-controls {
+      background: var(--color-paper-white);
+      border: 2px solid var(--color-border-light);
+      border-radius: var(--radius-lg);
+      box-shadow: 0 4px 0 var(--color-border-light);
+      padding: 22px;
+      margin-bottom: 24px;
+    }
+
+    .print-options-bar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .a4-landscape-page {
+      background: #ffffff;
+      width: 100%;
+      max-width: 1080px;
+      margin: 0 auto 30px auto;
+      padding: 26px;
+      border: 2px solid var(--color-border-light);
+      border-radius: 4px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      page-break-after: always;
+    }
+
+    .a4-header {
+      text-align: center;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid #222;
+    }
+
+    .a4-title {
+      font-family: var(--font-family-display);
+      font-size: 26px;
+      font-weight: 900;
+      color: #111;
+      letter-spacing: 0.02em;
+      margin-bottom: 6px;
+    }
+
+    .a4-meta-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 14px;
+      font-size: 12px;
+    }
+
+    .a4-meta-table th, .a4-meta-table td {
+      border: 1px solid #555;
+      padding: 6px 10px;
+    }
+
+    .a4-meta-table th {
+      background: #f2f2f2;
+      width: 14%;
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .a4-attendance-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+      text-align: center;
+    }
+
+    .a4-attendance-table th, .a4-attendance-table td {
+      border: 1px solid #444;
+      padding: 6px 4px;
+      vertical-align: middle;
+      height: 38px;
+    }
+
+    .a4-attendance-table th {
+      background: #f4f6f8;
+      font-weight: bold;
+    }
+
+    .a4-sig-cell img {
+      max-height: 28px;
+      max-width: 65px;
+      display: block;
+      margin: 0 auto;
+    }
+
+    .text-absent {
+      color: #d32f2f;
+      font-weight: bold;
+    }
+
+    .text-dropped {
+      color: #888;
+    }
+
+    .a4-footer {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 14px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 28px;
+      right: 28px;
+      background: var(--color-charcoal);
+      color: #fff;
+      padding: 14px 24px;
+      border-radius: var(--radius-default);
+      font-family: var(--font-family-display);
+      font-size: 16px;
+      font-weight: 800;
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s ease, transform 0.2s ease;
+      transform: translateY(12px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.18);
+    }
+
+    #toast.show {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+
+    /* ==========================================================================
+       PRINT MEDIA STYLES (A4 Landscape Print)
+       ========================================================================== */
+    @media print {
+      @page {
+        size: A4 landscape;
+        margin: 10mm 12mm;
+      }
+
+      body {
+        background: #fff !important;
+        color: #000 !important;
+      }
+
+      header.site-header,
+      .program-bar,
+      .print-controls,
+      .role-tabs,
+      .btn,
+      .admin-subtabs,
+      #toast,
+      .modal-overlay {
+        display: none !important;
+      }
+
+      main.main-content {
+        padding: 0 !important;
+        margin: 0 !important;
+        max-width: none !important;
+        width: 100% !important;
+      }
+
+      .view-panel {
+        display: none !important;
+      }
+
+      #adminView {
+        display: block !important;
+      }
+
+      #adminPrintSubtab {
+        display: block !important;
+      }
+
+      .a4-landscape-page {
+        border: none !important;
+        box-shadow: none !important;
+        padding: 0 !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: none !important;
+        page-break-after: always;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Site Header (소라색 & 책/연필 마스코트) -->
+  <header class="site-header">
+    <div class="brand-area" onclick="switchRole('kiosk')" title="출석 화면으로 이동">
+      <div class="mascot-avatar">📚</div>
+      <div class="brand-text">
+        <h1>노인복지관 전자출석부</h1>
+        <p>Senior Attendance System · 소라색 배움터</p>
+      </div>
+    </div>
+
+    <!-- Role Switching Tabs (강사 삭제, 키오스크 & 관리자 로그인만) -->
+    <div class="role-tabs">
+      <button class="role-btn active" id="tabKioskBtn" onclick="switchRole('kiosk')">
+        <span>✍️</span> 참여자 출석 (키오스크)
+      </button>
+      <button class="role-btn" id="tabAdminBtn" onclick="tryEnterAdminMode()">
+        <span>🔒</span> 직원 (관리자)
+      </button>
+    </div>
+
+    <!-- Header Actions -->
+    <div class="header-actions">
+      <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
+      <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
+      <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
+      <button class="btn btn-sm btn-danger" onclick="resetToSampleData()" title="초기 데이터 복원">초기화</button>
+    </div>
+  </header>
+
+  <!-- Global Program Selector Bar -->
+  <div class="main-content" style="padding-bottom: 0;">
+    <div class="program-bar">
+      <div class="program-selector-group">
+        <span class="bar-label">프로그램</span>
+        <select id="globalProgramSelect" onchange="onProgramChange()">
+          <!-- Populated dynamically -->
+        </select>
+
+        <span class="bar-label" style="margin-left:8px;">회차 선택</span>
+        <select id="globalSessionSelect" onchange="onSessionChange()">
+          <!-- Populated dynamically -->
+        </select>
+      </div>
+
+      <div id="programSummaryInfo" style="font-size: 14px; font-weight: 600; color: var(--color-pencil-gray);">
+        <!-- Filled by JS -->
+      </div>
+    </div>
+  </div>
+
+  <main class="main-content">
+
+    <!-- ====================================================================
+         VIEW 1: PARTICIPANT ATTENDANCE KIOSK (소라색 & 책/연필 귀여운 키오스크)
+         ==================================================================== -->
+    <section id="kioskView" class="view-panel active">
+      <div class="kiosk-hero">
+        <div class="kiosk-hero-text">
+          <div class="hero-badge">📖 행복한 배움터 출석체크</div>
+          <h2 class="kiosk-instruction" id="kioskTitleHeading">
+            어르신, <span class="accent-sora">성함을 누르고</span> 전자서명을 해 주세요!
+          </h2>
+          <p class="kiosk-subtext" id="kioskSubtitle">
+            오늘도 즐거운 배움의 날입니다. 본인 이름을 누르시면 큰 서명창이 열립니다.
+          </p>
+
+          <div class="kiosk-search-box">
+            <input type="text" id="kioskSearchInput" placeholder="이름으로 쉽게 찾기 (예: 홍길동)" oninput="renderKioskGrid()">
+            <button class="btn btn-sora" onclick="clearKioskSearch()">전체보기</button>
+          </div>
+        </div>
+
+        <!-- 동글동글 통통한 책 & 연필 귀여운 이모티콘 -->
+        <div class="kiosk-mascot-art" title="배움터 책과 연필">
+          <span>📚</span><span>✏️</span>
+        </div>
+      </div>
+
+      <!-- Participant Tiles Grid -->
+      <div id="kioskGrid" class="kiosk-grid">
+        <!-- Rendered by JS -->
+      </div>
+    </section>
+
+    <!-- ====================================================================
+         VIEW 2: ADMIN VIEW (직원 관리자 모드 - 로그인 필요)
+         ==================================================================== -->
+    <section id="adminView" class="view-panel">
+      <!-- Admin Top Status & Logout -->
+      <div class="card" style="padding: 14px 22px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span style="font-size:20px;">🛡️</span>
+          <span style="font-weight:800; color:var(--color-sora-deep);">직원 관리자 인증됨</span>
+          <span style="font-size:13px; color:var(--color-pencil-gray);">(모든 권한 사용 가능)</span>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-sm" onclick="openChangePasswordModal()">🔑 암호 변경</button>
+          <button class="btn btn-sm btn-danger" onclick="logoutAdmin()">🚪 관리자 로그아웃</button>
+        </div>
+      </div>
+
+      <!-- Admin Sub Tabs -->
+      <div class="admin-subtabs">
+        <div class="admin-subtab-group">
+          <button class="admin-subtab-btn active" onclick="switchAdminTab('program')">1. 프로그램 & 회차 관리</button>
+          <button class="admin-subtab-btn" onclick="switchAdminTab('participants')">2. 참여자 명단 (Excel 일괄)</button>
+          <button class="admin-subtab-btn" onclick="switchAdminTab('attendance')">3. 출석 현황 & 결석 처리</button>
+          <button class="admin-subtab-btn" onclick="switchAdminTab('print')">4. A4 출석부 생성 및 인쇄</button>
+        </div>
+      </div>
+
+      <!-- SUBTAB 1: PROGRAM MANAGEMENT -->
+      <div id="adminProgramSubtab" class="admin-subtab-content">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="bar-label">PROGRAM SETTINGS</span>
+              <h3 class="card-title">프로그램 신규 개설 및 세부 정보 수정</h3>
+            </div>
+            <button class="btn btn-sora btn-sm" onclick="openNewProgramModal()">+ 새 프로그램 등록</button>
+          </div>
+
+          <form id="programForm" onsubmit="saveCurrentProgram(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>프로그램명 *</label>
+                <input type="text" id="progName" required placeholder="예: 시니어 스마트폰 기초교실">
+              </div>
+              <div class="form-group">
+                <label>운영기간 (시작일 ~ 종료일) *</label>
+                <div style="display: flex; gap: 8px;">
+                  <input type="date" id="progStartDate" required onchange="autoGenerateSessionsPreview()">
+                  <input type="date" id="progEndDate" required onchange="autoGenerateSessionsPreview()">
+                </div>
+              </div>
+              <div class="form-group">
+                <label>총 회차수 *</label>
+                <input type="number" id="progTotalSessions" min="1" max="50" value="8" required onchange="autoGenerateSessionsPreview()">
+              </div>
+              <div class="form-group">
+                <label>운영 요일 *</label>
+                <div class="checkbox-group" id="progDayCheckboxes">
+                  <label class="checkbox-label"><input type="checkbox" value="1"> 월</label>
+                  <label class="checkbox-label"><input type="checkbox" value="2"> 화</label>
+                  <label class="checkbox-label"><input type="checkbox" value="3"> 수</label>
+                  <label class="checkbox-label"><input type="checkbox" value="4"> 목</label>
+                  <label class="checkbox-label"><input type="checkbox" value="5"> 금</label>
+                  <label class="checkbox-label"><input type="checkbox" value="6"> 토</label>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>운영 시간</label>
+                <input type="text" id="progTime" placeholder="예: 10:00 ~ 12:00">
+              </div>
+              <div class="form-group">
+                <label>교육 장소</label>
+                <input type="text" id="progLocation" placeholder="예: 3층 정보화교육실">
+              </div>
+              <div class="form-group">
+                <label>담당자 (사회복지사)</label>
+                <input type="text" id="progManager" placeholder="예: 이영희 사회복지사">
+              </div>
+              <div class="form-group">
+                <label>강사명</label>
+                <input type="text" id="progInstructor" placeholder="예: 박진수 전문강사">
+              </div>
+            </div>
+
+            <div style="display:flex; justify-content: flex-end; gap: 10px; margin-top: 10px;">
+              <button type="button" class="btn btn-danger" onclick="deleteCurrentProgram()">프로그램 삭제</button>
+              <button type="submit" class="btn btn-sora">프로그램 정보 저장</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- Session Schedule & Holiday Management -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="bar-label">SESSION SCHEDULE</span>
+              <h3 class="card-title">회차별 일정 및 휴강 관리</h3>
+            </div>
+            <div style="display:flex; gap:8px;">
+              <button class="btn btn-sm btn-sora" onclick="regenerateSessionsByRule()">요일 기준 회차 자동 재생성</button>
+              <button class="btn btn-sm" onclick="addNewSessionRow()">+ 회차 추가</button>
+            </div>
+          </div>
+          <p style="font-size: 13px; color: var(--color-pencil-gray); margin-bottom: 12px; font-weight: 500;">
+            * <strong>휴강일</strong>로 지정된 회차는 실제 운영 회차에서 제외되며, <strong>출석률 계산에서도 자동 제외</strong>됩니다.
+          </p>
+
+          <div id="sessionListGrid" class="session-list-grid">
+            <!-- Rendered by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTAB 2: PARTICIPANTS MANAGEMENT -->
+      <div id="adminParticipantsSubtab" class="admin-subtab-content" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="bar-label">PARTICIPANTS</span>
+              <h3 class="card-title">참여자 명단 관리 (Excel / 개별 등록)</h3>
+            </div>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn btn-sm" onclick="downloadExcelTemplate()">Excel 양식 받기</button>
+              <button class="btn btn-sm btn-sora" onclick="openExcelUploadModal()">Excel/CSV 일괄 등록</button>
+              <button class="btn btn-sm btn-sora" onclick="openAddParticipantModal()">+ 개별 참여자 추가</button>
+            </div>
+          </div>
+
+          <div style="margin-bottom: 14px; font-size: 13px; color: var(--color-pencil-gray); font-weight: 500;">
+            * 회원번호는 필수 항목이 아닙니다. 비회원 어르신 및 중장년 참여자도 등록 가능합니다.<br>
+            * 동명이인이 존재하는 경우 출석 화면에 회원번호가 자동으로 함께 표기되어 구분됩니다.
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">연번</th>
+                  <th>성명</th>
+                  <th>회원번호</th>
+                  <th>연락처</th>
+                  <th>비고</th>
+                  <th>중도포기 관리</th>
+                  <th>누적 출석률</th>
+                  <th style="width: 140px; text-align: center;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="adminParticipantTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTAB 3: ATTENDANCE STATUS & ABSENT MANAGEMENT (강사모드 대체 통합) -->
+      <div id="adminAttendanceSubtab" class="admin-subtab-content" style="display: none;">
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="bar-label">ATTENDANCE MANAGEMENT</span>
+              <h3 class="card-title" id="adminAttendanceTitle">당일 회차 출석 현황 및 대리 출결 관리</h3>
+            </div>
+            <div style="font-size: 13px; color: var(--color-pencil-gray); font-weight: 600;">
+              * 담당자가 참여자의 서명을 돕거나 결석 처리를 관리할 수 있습니다.
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 20px;">
+            <div class="card" style="padding:14px; text-align:center; margin-bottom:0;">
+              <span style="font-size:12px; font-weight:800; color:var(--color-pencil-gray);">등록 총원</span>
+              <div style="font-size:28px; font-weight:900;" id="admAttTotalCount">0</div>
+            </div>
+            <div class="card" style="padding:14px; text-align:center; margin-bottom:0; background:var(--color-sora-light); border-color:var(--color-sora-subtle);">
+              <span style="font-size:12px; font-weight:800; color:var(--color-sora-deep);">출석 완료</span>
+              <div style="font-size:28px; font-weight:900; color:var(--color-sora-deep);" id="admAttAttendedCount">0</div>
+            </div>
+            <div class="card" style="padding:14px; text-align:center; margin-bottom:0; background:#fff8f8; border-color:#ffd1d1;">
+              <span style="font-size:12px; font-weight:800; color:var(--color-danger);">결석</span>
+              <div style="font-size:28px; font-weight:900; color:var(--color-danger);" id="admAttAbsentCount">0</div>
+            </div>
+            <div class="card" style="padding:14px; text-align:center; margin-bottom:0;">
+              <span style="font-size:12px; font-weight:800; color:var(--color-pencil-gray);">미기록 (대기)</span>
+              <div style="font-size:28px; font-weight:900;" id="admAttPendingCount">0</div>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 50px;">번호</th>
+                  <th>성명</th>
+                  <th>회원번호</th>
+                  <th>연락처</th>
+                  <th>출결 상태</th>
+                  <th>전자서명 확인</th>
+                  <th style="width: 220px; text-align: center;">관리 / 서명 지원</th>
+                </tr>
+              </thead>
+              <tbody id="adminAttendanceTableBody">
+                <!-- Rendered by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- SUBTAB 4: A4 ATTENDANCE SHEET & PRINT -->
+      <div id="adminPrintSubtab" class="admin-subtab-content" style="display: none;">
+        <div class="print-controls">
+          <div class="card-header" style="margin-bottom: 14px; padding-bottom: 8px;">
+            <div>
+              <span class="bar-label">PRINT & PDF EXPORT</span>
+              <h3 class="card-title">A4 규격 출석부 생성 및 인쇄 설정</h3>
+            </div>
+            <button class="btn btn-sora btn-lg" onclick="triggerPrint()">🖨️ A4 출석부 바로 인쇄 / PDF 저장</button>
+          </div>
+
+          <div class="print-options-bar">
+            <!-- Scope selection -->
+            <div style="display:flex; align-items:center; gap: 10px;">
+              <label style="font-size:13px; font-weight:800;">출력 범위:</label>
+              <select id="printScopeType" onchange="onPrintScopeChange()">
+                <option value="all">전체 회차</option>
+                <option value="month">특정 월 선택</option>
+                <option value="custom">회차 범위 지정 (예: 1~6회기)</option>
+              </select>
+
+              <select id="printMonthSelect" style="display:none;" onchange="renderA4PrintPages()">
+                <!-- Populated by JS -->
+              </select>
+
+              <div id="printCustomRangeWrap" style="display:none; align-items:center; gap: 6px;">
+                <input type="number" id="printFromSession" min="1" value="1" style="width: 65px;" onchange="renderA4PrintPages()">
+                <span style="font-weight:700;">회기 ~</span>
+                <input type="number" id="printToSession" min="1" value="6" style="width: 65px;" onchange="renderA4PrintPages()">
+                <span style="font-weight:700;">회기</span>
+              </div>
+            </div>
+
+            <!-- Column Display Toggles -->
+            <div class="checkbox-group">
+              <span style="font-size:13px; font-weight:800;">출력 항목 선택:</span>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkPrintPhone" checked onchange="renderA4PrintPages()"> 연락처
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkPrintMemberId" checked onchange="renderA4PrintPages()"> 회원번호
+              </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkPrintRate" checked onchange="renderA4PrintPages()"> 출석률
+              </label>
+            </div>
+
+            <!-- Page chunk size -->
+            <div style="display:flex; align-items:center; gap: 8px;">
+              <label style="font-size:13px; font-weight:800;">페이지당 회차:</label>
+              <select id="printSessionsPerPage" onchange="renderA4PrintPages()">
+                <option value="6" selected>6회차 (권장, 큰 서명)</option>
+                <option value="8">8회차</option>
+                <option value="10">10회차</option>
+                <option value="12">12회차 (축소)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <!-- Rendered A4 Landscape Pages Container -->
+        <div id="a4PagesContainer">
+          <!-- Dynamically generated pages -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ====================================================================
+       MODALS
+       ==================================================================== -->
+
+  <!-- Modal 0: Admin Password Login Modal (직원 관리자 로그인) -->
+  <div id="adminLoginModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 440px; text-align: center;">
+      <div style="font-size: 46px; margin-bottom: 8px;">🔒</div>
+      <span class="hero-badge">관리자 인증</span>
+      <h3 style="font-family: var(--font-family-display); font-size: 24px; font-weight: 900; margin: 10px 0 6px 0;">
+        직원 관리자 로그인
+      </h3>
+      <p style="font-size: 14px; color: var(--color-pencil-gray); margin-bottom: 20px;">
+        프로그램 및 참여자 관리를 위해 비밀번호를 입력해 주세요.
+      </p>
+
+      <form onsubmit="handleAdminLogin(event)">
+        <div class="form-group" style="margin-bottom: 14px; text-align: left;">
+          <label>관리자 비밀번호</label>
+          <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" style="font-size: 18px; letter-spacing: 2px;" required autofocus>
+          <div style="font-size: 12px; color: var(--color-pencil-gray); margin-top: 4px;">
+            * 초기 비밀번호: <strong>1234</strong>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+          <button type="button" class="btn" onclick="closeAdminLoginModal()">취소</button>
+          <button type="submit" class="btn btn-sora">로그인</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 0-1: Change Admin Password Modal (비밀번호 변경) -->
+  <div id="changePasswordModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <span class="bar-label">SECURITY</span>
+        <h3 class="modal-title">관리자 비밀번호 변경</h3>
+      </div>
+      <form onsubmit="handleChangePassword(event)">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>현재 비밀번호 *</label>
+          <input type="password" id="currPwInput" required>
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>새 비밀번호 *</label>
+          <input type="password" id="newPwInput" required placeholder="새 비밀번호 입력">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>새 비밀번호 확인 *</label>
+          <input type="password" id="newPwConfirmInput" required placeholder="새 비밀번호 다시 입력">
+        </div>
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn" onclick="closeChangePasswordModal()">취소</button>
+          <button type="submit" class="btn btn-sora">비밀번호 변경</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 1: Participant Identity Confirmation Modal (본인 확인) -->
+  <div id="confirmNameModal" class="modal-overlay hidden">
+    <div class="modal-content" style="text-align: center; max-width: 460px;">
+      <div style="font-size: 48px; margin-bottom: 8px;">✏️</div>
+      <span class="hero-badge">본인 확인</span>
+      <h3 style="font-family: var(--font-family-display); font-size: 34px; font-weight: 900; margin: 14px 0; color: var(--color-charcoal);" id="confirmTargetName">홍길동</h3>
+      <p style="font-size: 19px; color: var(--color-pencil-gray); font-weight: 600; margin-bottom: 24px;">
+        <span id="confirmTargetNameEcho" style="color: var(--color-sora-deep); font-weight: 800;">홍길동</span> 님이 맞으십니까?
+      </p>
+      <div style="display: flex; gap: 12px; justify-content: center;">
+        <button class="btn btn-lg" onclick="closeConfirmModal()">아닙니다</button>
+        <button class="btn btn-sora btn-lg" onclick="proceedToSignature()">네, 접니다! (서명하기)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 2: Signature Modal (전자서명 캔버스) -->
+  <div id="signatureModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="hero-badge">전자서명</span>
+        <h3 class="modal-title"><span id="sigModalParticipantName" style="color:var(--color-sora-deep);">홍길동</span> 어르신 서명</h3>
+        <p style="font-size: 14px; color: var(--color-pencil-gray); font-weight: 600; margin-top: 4px;">
+          아래 네모 상자 안에 손가락이나 펜으로 이름을 정성껏 적어주세요.
+        </p>
+      </div>
+
+      <div class="signature-wrap">
+        <canvas id="sigCanvas"></canvas>
+        <div id="sigGuideText" class="sig-guide-text">여기에 서명해 주세요 ✍️</div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
+        <button type="button" class="btn" onclick="clearSignatureCanvas()">다시 쓰기 (지우기)</button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn" onclick="closeSignatureModal()">취소</button>
+          <button type="submit" class="btn btn-sora btn-lg" onclick="submitAttendanceSignature()">서명 완료 및 출석</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 3: Add / Edit Participant Modal -->
+  <div id="participantModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="bar-label">참여자 정보</span>
+        <h3 class="modal-title" id="participantModalTitle">참여자 등록</h3>
+      </div>
+      <form id="participantForm" onsubmit="saveParticipant(event)">
+        <input type="hidden" id="partId">
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>성명 *</label>
+          <input type="text" id="partName" required placeholder="예: 홍길동">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>회원번호 (비회원인 경우 공란 가능)</label>
+          <input type="text" id="partMemberId" placeholder="예: 2026-0142 (선택)">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>연락처</label>
+          <input type="text" id="partPhone" placeholder="예: 010-1234-5678">
+        </div>
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>비고</label>
+          <input type="text" id="partNote" placeholder="특이사항 메모">
+        </div>
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label class="checkbox-label">
+            <input type="checkbox" id="partIsDropped" onchange="toggleDroppedSessionInput()"> 중도포기 여부
+          </label>
+          <div id="partDroppedSessionWrap" style="display:none; margin-top: 8px;">
+            <label style="font-size: 13px;">중도포기 시작 회기:</label>
+            <input type="number" id="partDroppedSession" min="1" value="1" style="width: 80px;">
+          </div>
+        </div>
+        <div style="display: flex; justify-content: flex-end; gap: 10px;">
+          <button type="button" class="btn" onclick="closeParticipantModal()">취소</button>
+          <button type="submit" class="btn btn-sora">저장</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal 4: Excel Batch Upload Modal -->
+  <div id="excelUploadModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="bar-label">EXCEL BATCH UPLOAD</span>
+        <h3 class="modal-title">Excel / CSV 파일로 참여자 일괄 등록</h3>
+      </div>
+      <p style="font-size: 14px; color: var(--color-pencil-gray); font-weight: 500; margin-bottom: 16px;">
+        열 헤더명: <strong>성명</strong>, <strong>연락처</strong>, <strong>회원번호</strong>, <strong>비고</strong> 가 포함된 엑셀(.xlsx, .xls) 또는 .csv 파일을 선택하세요.
+      </p>
+      <div style="border: 2px dashed var(--color-sora); border-radius: var(--radius-default); padding: 30px; text-align: center; margin-bottom: 16px; background: #fbfdff;">
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: block; margin: 0 auto;">
+      </div>
+      <div id="excelPreviewArea" style="margin-bottom: 16px; max-height: 180px; overflow-y: auto; font-size: 13px;"></div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <button class="btn btn-sm" onclick="downloadExcelTemplate()">엑셀 서식 다운받기</button>
+        <div style="display: flex; gap: 10px;">
+          <button type="button" class="btn" onclick="closeExcelUploadModal()">닫기</button>
+          <button type="button" class="btn btn-sora" onclick="processExcelUpload()">명단 등록하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal 5: New Program Modal -->
+  <div id="newProgramModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <div class="modal-header">
+        <span class="bar-label">신규 프로그램 개설</span>
+        <h3 class="modal-title">새 배움터 프로그램 만들기</h3>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>프로그램명 *</label>
+        <input type="text" id="newProgTitle" placeholder="예: 시니어 스마트폰 기초과정" required>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>시작일자 *</label>
+        <input type="date" id="newProgStart" required>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>종료일자 *</label>
+        <input type="date" id="newProgEnd" required>
+      </div>
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>총 회차수</label>
+        <input type="number" id="newProgCount" value="8" min="1" max="50">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
+        <button class="btn" onclick="closeNewProgramModal()">취소</button>
+        <button class="btn btn-sora" onclick="confirmCreateNewProgram()">개설하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast"></div>
+
+  <!-- ====================================================================
+       APPLICATION JAVASCRIPT LOGIC
+       ========================================================================== -->
+  <script>
+    /* ==========================================================================
+       1. DATA STRUCTURE & SAMPLE SEED DATA
+       ========================================================================== */
+    const STORAGE_KEY = 'SENIOR_ATTENDANCE_DATA_V4_TEST';
+
+    // Default Password
+    const DEFAULT_ADMIN_PASSWORD = '1234';
+
+    const DEFAULT_DATA = {
+      adminPassword: DEFAULT_ADMIN_PASSWORD,
+      activeProgramId: "prog_001",
+      activeSessionId: "sess_003",
+      programs: [
+        {
+          id: "prog_001",
+          name: "테스트 프로그램",
+          startDate: "2026-07-24",
+          endDate: "2026-09-18",
+          totalSessions: 8,
+          daysOfWeek: [5], // 금요일 (5)
+          time: "10:00 ~ 12:00",
+          location: "배움터 1강의실",
+          manager: "홍길동 담당자",
+          instructor: "김철수 강사",
+          sessions: [
+            { id: "sess_001", round: 1, date: "2026-07-24", isHoliday: false, note: "개강 및 오리엔테이션" },
+            { id: "sess_002", round: 2, date: "2026-07-31", isHoliday: false, note: "스마트폰 기본 설정" },
+            { id: "sess_003", round: 3, date: "2026-08-07", isHoliday: false, note: "카카오톡 사진 전송" },
+            { id: "sess_004", round: 0, date: "2026-08-14", isHoliday: true,  note: "광복절 연휴 휴강" },
+            { id: "sess_005", round: 4, date: "2026-08-21", isHoliday: false, note: "지도 및 길찾기 앱" },
+            { id: "sess_006", round: 5, date: "2026-08-28", isHoliday: false, note: "유튜브 검색 및 구독" },
+            { id: "sess_007", round: 6, date: "2026-09-04", isHoliday: false, note: "버스 및 지하철 앱" },
+            { id: "sess_008", round: 7, date: "2026-09-11", isHoliday: false, note: "키오스크 실습" },
+            { id: "sess_009", round: 8, date: "2026-09-18", isHoliday: false, note: "종강식 및 수료" }
+          ],
+          participants: [
+            { id: "p01", name: "홍길동", memberId: "2026-0001", phone: "010-1234-5678", note: "우수 참여 어르신", isDropped: false, droppedSession: null },
+            { id: "p02", name: "홍길동", memberId: "2026-0002", phone: "010-2345-6789", note: "동명이인 테스트", isDropped: false, droppedSession: null },
+            { id: "p03", name: "김철수", memberId: "2026-0003", phone: "010-3456-7890", note: "스마트폰 기초반", isDropped: false, droppedSession: null },
+            { id: "p04", name: "이영희", memberId: "2026-0004", phone: "010-4567-8901", note: "", isDropped: false, droppedSession: null },
+            { id: "p05", name: "박순자", memberId: "",          phone: "010-5678-9012", note: "비회원 일반참여자", isDropped: false, droppedSession: null },
+            { id: "p06", name: "최정남", memberId: "2026-0005", phone: "010-6789-0123", note: "", isDropped: false, droppedSession: null },
+            { id: "p07", name: "강동원", memberId: "2026-0006", phone: "010-7890-1234", note: "", isDropped: false, droppedSession: null },
+            { id: "p08", name: "윤복희", memberId: "2026-0007", phone: "010-8901-2345", note: "건강상 이유 3회차 이후 중도포기", isDropped: true, droppedSession: 3 },
+            { id: "p09", name: "정대만", memberId: "2026-0008", phone: "010-9012-3456", note: "", isDropped: false, droppedSession: null },
+            { id: "p10", name: "임춘자", memberId: "",          phone: "010-1122-3344", note: "비회원", isDropped: false, droppedSession: null },
+            { id: "p11", name: "송영길", memberId: "2026-0009", phone: "010-2233-4455", note: "", isDropped: false, droppedSession: null },
+            { id: "p12", name: "한정숙", memberId: "2026-0010", phone: "010-3344-5566", note: "", isDropped: false, droppedSession: null }
+          ],
+          records: {}
+        }
+      ]
+    };
+
+    function generateSampleSignature(name) {
+      const canvas = document.createElement('canvas');
+      canvas.width = 120;
+      canvas.height = 50;
+      const ctx = canvas.getContext('2d');
+      ctx.strokeStyle = '#1e3a8a';
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.font = 'bold 20px cursive, sans-serif';
+      ctx.fillStyle = '#1e3a8a';
+      ctx.beginPath();
+      ctx.moveTo(15, 30);
+      ctx.bezierCurveTo(30, 10, 50, 45, 70, 25);
+      ctx.stroke();
+      ctx.fillText(name, 25, 35);
+      return canvas.toDataURL();
+    }
+
+    // Seed sample records
+    (function seedSampleRecords() {
+      const prog = DEFAULT_DATA.programs[0];
+      const p = prog.participants;
+      // Round 1
+      p.forEach((pt, idx) => {
+        if (idx === 4) {
+          prog.records[pt.id + '_sess_001'] = { status: 'absent', signature: null, timestamp: '2026-07-24 10:05' };
+        } else {
+          prog.records[pt.id + '_sess_001'] = { status: 'attended', signature: generateSampleSignature(pt.name), timestamp: '2026-07-24 09:50' };
+        }
+      });
+      // Round 2
+      p.forEach((pt, idx) => {
+        if (idx === 7) {
+          prog.records[pt.id + '_sess_002'] = { status: 'attended', signature: generateSampleSignature(pt.name), timestamp: '2026-07-31 09:55' };
+        } else if (idx === 1) {
+          prog.records[pt.id + '_sess_002'] = { status: 'absent', signature: null, timestamp: '2026-07-31 10:10' };
+        } else {
+          prog.records[pt.id + '_sess_002'] = { status: 'attended', signature: generateSampleSignature(pt.name), timestamp: '2026-07-31 09:52' };
+        }
+      });
+      // Round 3
+      prog.records['p01_sess_003'] = { status: 'attended', signature: generateSampleSignature('홍길동'), timestamp: '2026-08-07 09:40' };
+      prog.records['p04_sess_003'] = { status: 'attended', signature: generateSampleSignature('이영희'), timestamp: '2026-08-07 09:45' };
+    })();
+
+    let appData = null;
+    let currentRole = 'kiosk'; // 'kiosk' | 'admin'
+    let isAdminLoggedIn = false; // session login state
+    let currentAdminTab = 'program'; // 'program' | 'participants' | 'attendance' | 'print'
+    let activeParticipantForSig = null;
+
+    /* ==========================================================================
+       2. INITIALIZATION & STORAGE
+       ========================================================================== */
+    function loadData() {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        try {
+          appData = JSON.parse(stored);
+        } catch (e) {
+          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        }
+      } else {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+    }
+
+    function resetToSampleData() {
+      if (confirm('모든 데이터를 초기 샘플 데이터로 복원하시겠습니까? 현재 작성된 데이터는 덮어씌워집니다.')) {
+        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
+        saveData();
+        isAdminLoggedIn = false;
+        initApp();
+        showToast('초기 샘플 데이터로 복원되었습니다. (암호: 1234)');
+      }
+    }
+
+    function exportDataJSON() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `senior_attendance_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+      showToast('백업 파일이 다운로드되었습니다.');
+    }
+
+    function triggerImportJSON() {
+      document.getElementById('importJsonInput').click();
+    }
+
+    function importDataJSON(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed && parsed.programs) {
+            appData = parsed;
+            if (!appData.adminPassword) appData.adminPassword = DEFAULT_ADMIN_PASSWORD;
+            saveData();
+            initApp();
+            showToast('데이터 복원이 성공적으로 완료되었습니다.');
+          } else {
+            alert('올바르지 않은 전자출석부 백업 파일 형식입니다.');
+          }
+        } catch (err) {
+          alert('JSON 파일 해석 오류: ' + err.message);
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    /* ==========================================================================
+       3. NAVIGATION & ADMIN LOGIN SECURITY
+       ========================================================================== */
+    function switchRole(role) {
+      currentRole = role;
+      document.getElementById('tabKioskBtn').classList.toggle('active', role === 'kiosk');
+      document.getElementById('tabAdminBtn').classList.toggle('active', role === 'admin');
+
+      document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
+      if (role === 'kiosk') {
+        document.getElementById('kioskView').classList.add('active');
+        renderKioskGrid();
+      } else if (role === 'admin') {
+        document.getElementById('adminView').classList.add('active');
+        renderAdminView();
+      }
+    }
+
+    function tryEnterAdminMode() {
+      if (isAdminLoggedIn) {
+        switchRole('admin');
+      } else {
+        openAdminLoginModal();
+      }
+    }
+
+    function openAdminLoginModal() {
+      document.getElementById('adminPasswordInput').value = '';
+      document.getElementById('adminLoginModal').classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('adminPasswordInput').focus();
+      }, 100);
+    }
+
+    function closeAdminLoginModal() {
+      document.getElementById('adminLoginModal').classList.add('hidden');
+    }
+
+    function handleAdminLogin(event) {
+      event.preventDefault();
+      const inputPw = document.getElementById('adminPasswordInput').value;
+      const currentPw = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
+
+      if (inputPw === currentPw) {
+        isAdminLoggedIn = true;
+        closeAdminLoginModal();
+        switchRole('admin');
+        showToast('관리자 인증에 성공했습니다.');
+      } else {
+        alert('비밀번호가 일치하지 않습니다. (초기 비밀번호: 1234)');
+        document.getElementById('adminPasswordInput').focus();
+      }
+    }
+
+    function logoutAdmin() {
+      isAdminLoggedIn = false;
+      switchRole('kiosk');
+      showToast('관리자 로그아웃 되었습니다.');
+    }
+
+    function openChangePasswordModal() {
+      document.getElementById('currPwInput').value = '';
+      document.getElementById('newPwInput').value = '';
+      document.getElementById('newPwConfirmInput').value = '';
+      document.getElementById('changePasswordModal').classList.remove('hidden');
+    }
+
+    function closeChangePasswordModal() {
+      document.getElementById('changePasswordModal').classList.add('hidden');
+    }
+
+    function handleChangePassword(event) {
+      event.preventDefault();
+      const curr = document.getElementById('currPwInput').value;
+      const newPw = document.getElementById('newPwInput').value;
+      const confirmPw = document.getElementById('newPwConfirmInput').value;
+      const actualCurr = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
+
+      if (curr !== actualCurr) {
+        alert('현재 비밀번호가 일치하지 않습니다.');
+        return;
+      }
+      if (!newPw) {
+        alert('새 비밀번호를 입력해 주세요.');
+        return;
+      }
+      if (newPw !== confirmPw) {
+        alert('새 비밀번호 확인이 일치하지 않습니다.');
+        return;
+      }
+
+      appData.adminPassword = newPw;
+      saveData();
+      closeChangePasswordModal();
+      showToast('관리자 비밀번호가 성공적으로 변경되었습니다.');
+    }
+
+    function switchAdminTab(subtab) {
+      currentAdminTab = subtab;
+      document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.classList.remove('active'));
+      const activeBtn = Array.from(document.querySelectorAll('.admin-subtab-btn')).find(b => b.getAttribute('onclick').includes(subtab));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      document.getElementById('adminProgramSubtab').style.display = (subtab === 'program') ? 'block' : 'none';
+      document.getElementById('adminParticipantsSubtab').style.display = (subtab === 'participants') ? 'block' : 'none';
+      document.getElementById('adminAttendanceSubtab').style.display = (subtab === 'attendance') ? 'block' : 'none';
+      document.getElementById('adminPrintSubtab').style.display = (subtab === 'print') ? 'block' : 'none';
+
+      if (subtab === 'program') renderAdminProgramSubtab();
+      if (subtab === 'participants') renderAdminParticipantsSubtab();
+      if (subtab === 'attendance') renderAdminAttendanceSubtab();
+      if (subtab === 'print') renderAdminPrintSubtab();
+    }
+
+    /* ==========================================================================
+       4. GETTERS & CALCULATIONS
+       ========================================================================== */
+    function getCurrentProgram() {
+      if (!appData.programs || appData.programs.length === 0) return null;
+      let prog = appData.programs.find(p => p.id === appData.activeProgramId);
+      if (!prog) {
+        prog = appData.programs[0];
+        appData.activeProgramId = prog.id;
+      }
+      return prog;
+    }
+
+    function getCurrentSession() {
+      const prog = getCurrentProgram();
+      if (!prog || !prog.sessions || prog.sessions.length === 0) return null;
+      let sess = prog.sessions.find(s => s.id === appData.activeSessionId);
+      if (!sess) {
+        sess = prog.sessions.find(s => !s.isHoliday) || prog.sessions[0];
+        appData.activeSessionId = sess.id;
+      }
+      return sess;
+    }
+
+    function getOperationalSessions(prog) {
+      return (prog.sessions || []).filter(s => !s.isHoliday);
+    }
+
+    function getDuplicateNamesSet(participants) {
+      const counts = {};
+      participants.forEach(p => {
+        counts[p.name] = (counts[p.name] || 0) + 1;
+      });
+      const dupes = new Set();
+      Object.keys(counts).forEach(name => {
+        if (counts[name] > 1) dupes.add(name);
+      });
+      return dupes;
+    }
+
+    function calculateAttendanceRate(prog, participant) {
+      const opSessions = getOperationalSessions(prog);
+      const totalOpCount = opSessions.length;
+      if (totalOpCount === 0) return { attended: 0, total: 0, rate: 0 };
+
+      let attendedCount = 0;
+      opSessions.forEach(sess => {
+        const key = `${participant.id}_${sess.id}`;
+        const record = prog.records[key];
+        if (record && record.status === 'attended') {
+          attendedCount++;
+        }
+      });
+
+      const rate = Math.round((attendedCount / totalOpCount) * 100);
+      return {
+        attended: attendedCount,
+        total: totalOpCount,
+        rate: rate
+      };
+    }
+
+    /* ==========================================================================
+       5. GLOBAL SELECTORS & HEADER INFO
+       ========================================================================== */
+    function populateGlobalSelectors() {
+      const progSelect = document.getElementById('globalProgramSelect');
+      const sessSelect = document.getElementById('globalSessionSelect');
+      const curProg = getCurrentProgram();
+
+      progSelect.innerHTML = '';
+      appData.programs.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.id;
+        opt.textContent = p.name;
+        if (curProg && p.id === curProg.id) opt.selected = true;
+        progSelect.appendChild(opt);
+      });
+
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+    }
+
+    function populateSessionSelector() {
+      const sessSelect = document.getElementById('globalSessionSelect');
+      const curProg = getCurrentProgram();
+      const curSess = getCurrentSession();
+
+      sessSelect.innerHTML = '';
+      if (!curProg || !curProg.sessions) return;
+
+      let roundCounter = 1;
+      curProg.sessions.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        if (s.isHoliday) {
+          opt.textContent = `[휴강일] ${s.date} ${s.note ? '(' + s.note + ')' : ''}`;
+        } else {
+          opt.textContent = `${s.round || roundCounter}회기 (${s.date}) ${s.note ? '- ' + s.note : ''}`;
+          roundCounter++;
+        }
+        if (curSess && s.id === curSess.id) opt.selected = true;
+        sessSelect.appendChild(opt);
+      });
+    }
+
+    function updateProgramSummaryBadge() {
+      const curProg = getCurrentProgram();
+      const curSess = getCurrentSession();
+      const infoSpan = document.getElementById('programSummaryInfo');
+      if (!curProg) {
+        infoSpan.textContent = '';
+        return;
+      }
+
+      const opCount = getOperationalSessions(curProg).length;
+      infoSpan.innerHTML = `
+        <span>기간: <strong>${curProg.startDate || '-'} ~ ${curProg.endDate || '-'}</strong></span> · 
+        <span>강사: <strong>${curProg.instructor || '-'}</strong></span> · 
+        <span>정원: <strong>${(curProg.participants || []).length}명</strong></span> · 
+        <span style="color:var(--color-sora-deep);">실운영: <strong>${opCount}회차</strong></span>
+      `;
+
+      // Update Kiosk Title
+      const kioskTitle = document.getElementById('kioskTitleHeading');
+      const kioskSub = document.getElementById('kioskSubtitle');
+      if (curSess) {
+        const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회기 (${curSess.date})`;
+        kioskTitle.innerHTML = curSess.isHoliday 
+          ? `오늘은 <span class="accent-sora">휴강일</span>입니다` 
+          : `어르신, <span class="accent-sora">${sessionLabel} 출석</span> 서명을 해 주세요!`;
+        kioskSub.textContent = curSess.isHoliday 
+          ? '오늘은 휴강일로 지정되어 있어 출석 서명을 진행하지 않습니다.' 
+          : `환영합니다! 본인의 이름을 누르시면 큰 서명창이 열립니다.`;
+      }
+    }
+
+    function onProgramChange() {
+      const select = document.getElementById('globalProgramSelect');
+      appData.activeProgramId = select.value;
+      const prog = getCurrentProgram();
+      const firstValid = prog.sessions.find(s => !s.isHoliday) || prog.sessions[0];
+      appData.activeSessionId = firstValid ? firstValid.id : null;
+      saveData();
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+      refreshActiveView();
+    }
+
+    function onSessionChange() {
+      const select = document.getElementById('globalSessionSelect');
+      appData.activeSessionId = select.value;
+      saveData();
+      updateProgramSummaryBadge();
+      refreshActiveView();
+    }
+
+    function refreshActiveView() {
+      if (currentRole === 'kiosk') renderKioskGrid();
+      else if (currentRole === 'admin') {
+        if (currentAdminTab === 'program') renderAdminProgramSubtab();
+        else if (currentAdminTab === 'participants') renderAdminParticipantsSubtab();
+        else if (currentAdminTab === 'attendance') renderAdminAttendanceSubtab();
+        else if (currentAdminTab === 'print') renderAdminPrintSubtab();
+      }
+    }
+
+    /* ==========================================================================
+       6. VIEW 1: PARTICIPANT ATTENDANCE KIOSK
+       ========================================================================== */
+    function renderKioskGrid() {
+      const grid = document.getElementById('kioskGrid');
+      const curProg = getCurrentProgram();
+      const curSess = getCurrentSession();
+      if (!curProg || !curSess) {
+        grid.innerHTML = '<p style="padding: 20px;">등록된 프로그램 또는 회차가 없습니다.</p>';
+        return;
+      }
+
+      const dupes = getDuplicateNamesSet(curProg.participants);
+      const query = (document.getElementById('kioskSearchInput').value || '').trim().toLowerCase();
+
+      let list = [...curProg.participants];
+      if (query) {
+        list = list.filter(p => p.name.toLowerCase().includes(query) || (p.memberId && p.memberId.includes(query)));
+      }
+
+      list.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+
+      grid.innerHTML = '';
+      if (list.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; padding: 40px; text-align: center; font-size: 18px; color: var(--color-pencil-gray); font-weight: 700;">일치하는 참여자가 없습니다.</div>';
+        return;
+      }
+
+      list.forEach(p => {
+        const key = `${p.id}_${curSess.id}`;
+        const record = curProg.records[key];
+        const isAttended = record && record.status === 'attended';
+        const isAbsent = record && record.status === 'absent';
+        const isDroppedNow = p.isDropped && curSess.round >= (p.droppedSession || 999);
+
+        const tile = document.createElement('div');
+        tile.className = `participant-tile ${isAttended ? 'attended' : ''} ${isDroppedNow ? 'dropped' : ''}`;
+        
+        let statusBadge = '';
+        if (isDroppedNow) {
+          statusBadge = '<span class="tile-badge badge-pending">중도포기</span>';
+        } else if (isAttended) {
+          statusBadge = '<span class="tile-badge badge-attended">✓ 출석 완료</span>';
+        } else if (isAbsent) {
+          statusBadge = '<span class="tile-badge badge-absent">결석 처리됨</span>';
+        } else {
+          statusBadge = '<span class="tile-badge badge-pending">출석하기 ➔</span>';
+        }
+
+        const showMemberId = dupes.has(p.name) || p.memberId;
+        const memberIdLabel = showMemberId && p.memberId ? `<div class="tile-id">회원 ${p.memberId}</div>` : '';
+
+        tile.innerHTML = `
+          ${memberIdLabel}
+          <div class="tile-name">${p.name}</div>
+          ${statusBadge}
+        `;
+
+        tile.onclick = () => onParticipantTileClick(p, isAttended, isDroppedNow);
+        grid.appendChild(tile);
+      });
+    }
+
+    function clearKioskSearch() {
+      document.getElementById('kioskSearchInput').value = '';
+      renderKioskGrid();
+    }
+
+    function onParticipantTileClick(participant, isAttended, isDroppedNow) {
+      const curSess = getCurrentSession();
+      if (curSess.isHoliday) {
+        alert('오늘은 휴강일로 등록되어 있어 출석 서명을 진행할 수 없습니다.');
+        return;
+      }
+      if (isDroppedNow) {
+        if (!confirm(`${participant.name} 님은 중도포기로 등록되어 있습니다. 그래도 서명을 진행하시겠습니까?`)) {
+          return;
+        }
+      }
+      if (isAttended) {
+        if (!confirm(`${participant.name} 님은 이미 출석 서명을 완료하셨습니다. 다시 서명하여 덮어쓰시겠습니까?`)) {
+          return;
+        }
+      }
+
+      activeParticipantForSig = participant;
+      openConfirmModal(participant);
+    }
+
+    function openConfirmModal(participant) {
+      document.getElementById('confirmTargetName').textContent = participant.name;
+      document.getElementById('confirmTargetNameEcho').textContent = participant.name;
+      document.getElementById('confirmNameModal').classList.remove('hidden');
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirmNameModal').classList.add('hidden');
+    }
+
+    function proceedToSignature() {
+      closeConfirmModal();
+      openSignatureModal(activeParticipantForSig);
+    }
+
+    /* ==========================================================================
+       7. SIGNATURE CANVAS ENGINE
+       ========================================================================== */
+    let canvas, ctx;
+    let isDrawing = false;
+    let hasDrawn = false;
+
+    function initSignatureCanvas() {
+      canvas = document.getElementById('sigCanvas');
+      ctx = canvas.getContext('2d');
+
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        ctx.strokeStyle = '#1e3a8a';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+      setTimeout(resizeCanvas, 50);
+
+      function getPos(e) {
+        const rect = canvas.getBoundingClientRect();
+        if (e.touches && e.touches.length > 0) {
+          return {
+            x: e.touches[0].clientX - rect.left,
+            y: e.touches[0].clientY - rect.top
+          };
+        }
+        return {
+          x: e.clientX - rect.left,
+          y: e.clientY - rect.top
+        };
+      }
+
+      function startDraw(e) {
+        isDrawing = true;
+        hasDrawn = true;
+        document.getElementById('sigGuideText').style.display = 'none';
+        const pos = getPos(e);
+        ctx.beginPath();
+        ctx.moveTo(pos.x, pos.y);
+        e.preventDefault();
+      }
+
+      function moveDraw(e) {
+        if (!isDrawing) return;
+        const pos = getPos(e);
+        ctx.lineTo(pos.x, pos.y);
+        ctx.stroke();
+        e.preventDefault();
+      }
+
+      function endDraw() {
+        isDrawing = false;
+      }
+
+      canvas.addEventListener('mousedown', startDraw);
+      canvas.addEventListener('mousemove', moveDraw);
+      window.addEventListener('mouseup', endDraw);
+
+      canvas.addEventListener('touchstart', startDraw, { passive: false });
+      canvas.addEventListener('touchmove', moveDraw, { passive: false });
+      window.addEventListener('touchend', endDraw);
+    }
+
+    function openSignatureModal(participant) {
+      document.getElementById('sigModalParticipantName').textContent = participant.name;
+      document.getElementById('signatureModal').classList.remove('hidden');
+      clearSignatureCanvas();
+      setTimeout(() => {
+        const rect = canvas.getBoundingClientRect();
+        canvas.width = rect.width * 2;
+        canvas.height = rect.height * 2;
+        ctx.scale(2, 2);
+        ctx.strokeStyle = '#1e3a8a';
+        ctx.lineWidth = 3.5;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        clearSignatureCanvas();
+      }, 50);
+    }
+
+    function closeSignatureModal() {
+      document.getElementById('signatureModal').classList.add('hidden');
+    }
+
+    function clearSignatureCanvas() {
+      if (!ctx || !canvas) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      hasDrawn = false;
+      document.getElementById('sigGuideText').style.display = 'block';
+    }
+
+    function submitAttendanceSignature() {
+      if (!hasDrawn) {
+        alert('서명을 진행해 주세요. 서명 상자 안에 이름을 적어주시면 됩니다.');
+        return;
+      }
+
+      const prog = getCurrentProgram();
+      const sess = getCurrentSession();
+      if (!prog || !sess || !activeParticipantForSig) return;
+
+      const dataUrl = canvas.toDataURL('image/png');
+      const key = `${activeParticipantForSig.id}_${sess.id}`;
+      
+      const now = new Date();
+      const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
+
+      prog.records[key] = {
+        status: 'attended',
+        signature: dataUrl,
+        timestamp: timeStr
+      };
+
+      saveData();
+      closeSignatureModal();
+      showToast(`🎉 반갑습니다, ${activeParticipantForSig.name} 어르신! 출석이 완료되었습니다.`);
+      refreshActiveView();
+    }
+
+    /* ==========================================================================
+       8. VIEW 2: ADMIN MANAGEMENT - SUBTAB 1 (PROGRAM & SESSIONS)
+       ========================================================================== */
+    function renderAdminView() {
+      switchAdminTab(currentAdminTab);
+    }
+
+    function renderAdminProgramSubtab() {
+      const prog = getCurrentProgram();
+      if (!prog) return;
+
+      document.getElementById('progName').value = prog.name || '';
+      document.getElementById('progStartDate').value = prog.startDate || '';
+      document.getElementById('progEndDate').value = prog.endDate || '';
+      document.getElementById('progTotalSessions').value = prog.totalSessions || 8;
+      document.getElementById('progTime').value = prog.time || '';
+      document.getElementById('progLocation').value = prog.location || '';
+      document.getElementById('progManager').value = prog.manager || '';
+      document.getElementById('progInstructor').value = prog.instructor || '';
+
+      const checkboxes = document.querySelectorAll('#progDayCheckboxes input[type="checkbox"]');
+      checkboxes.forEach(cb => {
+        cb.checked = (prog.daysOfWeek || []).includes(parseInt(cb.value));
+      });
+
+      renderSessionScheduleCards();
+    }
+
+    function renderSessionScheduleCards() {
+      const prog = getCurrentProgram();
+      const container = document.getElementById('sessionListGrid');
+      container.innerHTML = '';
+      if (!prog || !prog.sessions) return;
+
+      let opRoundCounter = 1;
+      prog.sessions.forEach((s, idx) => {
+        const card = document.createElement('div');
+        card.className = `session-item-card ${s.isHoliday ? 'is-holiday' : ''}`;
+        
+        const roundTitle = s.isHoliday ? `[휴강일]` : `${s.round || opRoundCounter}회기`;
+        if (!s.isHoliday) opRoundCounter++;
+
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 8px;">
+            <strong style="font-family:var(--font-family-display); font-size:15px; color:${s.isHoliday ? 'var(--color-danger)' : 'var(--color-charcoal)'};">${roundTitle}</strong>
+            <button class="btn btn-sm btn-danger" style="padding:2px 8px; font-size:11px;" onclick="deleteSessionRow(${idx})">삭제</button>
+          </div>
+          <div style="margin-bottom: 6px;">
+            <input type="date" value="${s.date}" style="font-size:13px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'date', this.value)">
+          </div>
+          <div style="margin-bottom: 6px;">
+            <input type="text" value="${s.note || ''}" placeholder="교육 내용/비고" style="font-size:12px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'note', this.value)">
+          </div>
+          <div>
+            <label class="checkbox-label" style="font-size:12px; color:var(--color-pencil-gray);">
+              <input type="checkbox" ${s.isHoliday ? 'checked' : ''} onchange="toggleSessionHoliday(${idx}, this.checked)">
+              휴강 지정 (회차 제외)
+            </label>
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    function updateSessionField(index, field, value) {
+      const prog = getCurrentProgram();
+      if (!prog || !prog.sessions[index]) return;
+      prog.sessions[index][field] = value;
+      saveData();
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+    }
+
+    function toggleSessionHoliday(index, isChecked) {
+      const prog = getCurrentProgram();
+      if (!prog || !prog.sessions[index]) return;
+      prog.sessions[index].isHoliday = isChecked;
+      
+      let counter = 1;
+      prog.sessions.forEach(s => {
+        if (!s.isHoliday) {
+          s.round = counter++;
+        } else {
+          s.round = 0;
+        }
+      });
+
+      saveData();
+      renderSessionScheduleCards();
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+      showToast(isChecked ? '휴강일로 지정되었습니다 (실운영 회차에서 제외).' : '정상 회차로 전환되었습니다.');
+    }
+
+    function addNewSessionRow() {
+      const prog = getCurrentProgram();
+      if (!prog) return;
+      const lastSession = prog.sessions[prog.sessions.length - 1];
+      let newDate = new Date().toISOString().slice(0, 10);
+      if (lastSession && lastSession.date) {
+        const d = new Date(lastSession.date);
+        d.setDate(d.getDate() + 7);
+        newDate = d.toISOString().slice(0, 10);
+      }
+
+      const opCount = getOperationalSessions(prog).length;
+      prog.sessions.push({
+        id: 'sess_' + Date.now(),
+        round: opCount + 1,
+        date: newDate,
+        isHoliday: false,
+        note: ''
+      });
+
+      saveData();
+      renderSessionScheduleCards();
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+    }
+
+    function deleteSessionRow(index) {
+      const prog = getCurrentProgram();
+      if (!prog) return;
+      if (prog.sessions.length <= 1) {
+        alert('최소 1개 이상의 회차가 유지되어야 합니다.');
+        return;
+      }
+      if (confirm('해당 회차를 삭제하시겠습니까? 연결된 출석 데이터가 있을 수 있습니다.')) {
+        prog.sessions.splice(index, 1);
+        let counter = 1;
+        prog.sessions.forEach(s => {
+          if (!s.isHoliday) s.round = counter++;
+        });
+        saveData();
+        renderSessionScheduleCards();
+        populateSessionSelector();
+        updateProgramSummaryBadge();
+      }
+    }
+
+    function regenerateSessionsByRule() {
+      const prog = getCurrentProgram();
+      if (!prog) return;
+      if (!confirm('설정된 시작일, 요일, 총 회차수에 맞춰 전체 회차 일정을 자동으로 재생성하시겠습니까?')) return;
+
+      const startDate = new Date(prog.startDate);
+      const total = parseInt(prog.totalSessions) || 8;
+      const days = (prog.daysOfWeek && prog.daysOfWeek.length > 0) ? prog.daysOfWeek : [1];
+
+      const newSessions = [];
+      let currentDate = new Date(startDate);
+      let createdRounds = 0;
+      let safeguard = 0;
+
+      while (createdRounds < total && safeguard < 200) {
+        safeguard++;
+        const dayOfWeek = currentDate.getDay();
+        if (days.includes(dayOfWeek)) {
+          createdRounds++;
+          newSessions.push({
+            id: 'sess_' + Date.now() + '_' + createdRounds,
+            round: createdRounds,
+            date: currentDate.toISOString().slice(0, 10),
+            isHoliday: false,
+            note: `${createdRounds}회차 교육`
+          });
+        }
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      prog.sessions = newSessions;
+      saveData();
+      renderSessionScheduleCards();
+      populateSessionSelector();
+      updateProgramSummaryBadge();
+      showToast(`${total}개 회차 일정이 자동 생성되었습니다.`);
+    }
+
+    function saveCurrentProgram(event) {
+      event.preventDefault();
+      const prog = getCurrentProgram();
+      if (!prog) return;
+
+      prog.name = document.getElementById('progName').value.trim();
+      prog.startDate = document.getElementById('progStartDate').value;
+      prog.endDate = document.getElementById('progEndDate').value;
+      prog.totalSessions = parseInt(document.getElementById('progTotalSessions').value) || 8;
+      prog.time = document.getElementById('progTime').value.trim();
+      prog.location = document.getElementById('progLocation').value.trim();
+      prog.manager = document.getElementById('progManager').value.trim();
+      prog.instructor = document.getElementById('progInstructor').value.trim();
+
+      const selectedDays = [];
+      document.querySelectorAll('#progDayCheckboxes input[type="checkbox"]:checked').forEach(cb => {
+        selectedDays.push(parseInt(cb.value));
+      });
+      prog.daysOfWeek = selectedDays;
+
+      saveData();
+      populateGlobalSelectors();
+      showToast('프로그램 정보가 안전하게 저장되었습니다.');
+    }
+
+    function openNewProgramModal() {
+      const today = new Date().toISOString().slice(0, 10);
+      document.getElementById('newProgTitle').value = '';
+      document.getElementById('newProgStart').value = today;
+      document.getElementById('newProgEnd').value = today;
+      document.getElementById('newProgCount').value = 8;
+      document.getElementById('newProgramModal').classList.remove('hidden');
+    }
+
+    function closeNewProgramModal() {
+      document.getElementById('newProgramModal').classList.add('hidden');
+    }
+
+    function confirmCreateNewProgram() {
+      const title = document.getElementById('newProgTitle').value.trim();
+      const start = document.getElementById('newProgStart').value;
+      const end = document.getElementById('newProgEnd').value;
+      const count = parseInt(document.getElementById('newProgCount').value) || 8;
+
+      if (!title || !start || !end) {
+        alert('프로그램명과 운영 기간을 모두 입력해 주세요.');
+        return;
+      }
+
+      const newId = 'prog_' + Date.now();
+      const newProg = {
+        id: newId,
+        name: title,
+        startDate: start,
+        endDate: end,
+        totalSessions: count,
+        daysOfWeek: [1],
+        time: "10:00 ~ 12:00",
+        location: "프로그램실",
+        manager: "담당 사회복지사",
+        instructor: "강사",
+        sessions: [],
+        participants: [],
+        records: {}
+      };
+
+      let curr = new Date(start);
+      let r = 1;
+      while (r <= count) {
+        newProg.sessions.push({
+          id: 'sess_' + Date.now() + '_' + r,
+          round: r,
+          date: curr.toISOString().slice(0, 10),
+          isHoliday: false,
+          note: `${r}회기`
+        });
+        curr.setDate(curr.getDate() + 7);
+        r++;
+      }
+
+      appData.programs.push(newProg);
+      appData.activeProgramId = newId;
+      appData.activeSessionId = newProg.sessions[0].id;
+      saveData();
+      closeNewProgramModal();
+      populateGlobalSelectors();
+      renderAdminProgramSubtab();
+      showToast('새 프로그램이 개설되었습니다.');
+    }
+
+    function deleteCurrentProgram() {
+      if (appData.programs.length <= 1) {
+        alert('최소 1개의 프로그램이 유지되어야 합니다.');
+        return;
+      }
+      const prog = getCurrentProgram();
+      if (!prog) return;
+      if (confirm(`정말 [${prog.name}] 프로그램을 삭제하시겠습니까? 등록된 모든 참여자 및 출석 기록이 삭제됩니다.`)) {
+        appData.programs = appData.programs.filter(p => p.id !== prog.id);
+        appData.activeProgramId = appData.programs[0].id;
+        saveData();
+        populateGlobalSelectors();
+        renderAdminProgramSubtab();
+        showToast('프로그램이 삭제되었습니다.');
+      }
+    }
+
+    /* ==========================================================================
+       9. VIEW 2: ADMIN MANAGEMENT - SUBTAB 2 (PARTICIPANTS & EXCEL)
+       ========================================================================== */
+    function renderAdminParticipantsSubtab() {
+      const prog = getCurrentProgram();
+      const tbody = document.getElementById('adminParticipantTableBody');
+      tbody.innerHTML = '';
+      if (!prog || !prog.participants) return;
+
+      const dupes = getDuplicateNamesSet(prog.participants);
+
+      prog.participants.forEach((p, idx) => {
+        const stats = calculateAttendanceRate(prog, p);
+        const tr = document.createElement('tr');
+
+        const showDupeWarning = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-size:12px; font-weight:800;">(동명이인)</span>` : '';
+        const droppedBadge = p.isDropped 
+          ? `<span style="color:var(--color-danger); font-weight:800;">[${p.droppedSession || 1}회기 중도포기]</span>` 
+          : `<span style="color:var(--color-pencil-gray); font-weight:600;">정상 참여</span>`;
+
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><strong>${p.name}</strong> ${showDupeWarning}</td>
+          <td>${p.memberId ? p.memberId : '<span style="color:#aaa;">-</span>'}</td>
+          <td>${p.phone ? p.phone : '<span style="color:#aaa;">-</span>'}</td>
+          <td>${p.note || ''}</td>
+          <td>${droppedBadge}</td>
+          <td><strong style="color:var(--color-sora-deep);">${stats.rate}%</strong> (${stats.attended}/${stats.total}회)</td>
+          <td style="text-align: center;">
+            <div style="display:inline-flex; gap:6px;">
+              <button class="btn btn-sm" onclick="openEditParticipantModal('${p.id}')">수정</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteParticipant('${p.id}')">삭제</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function openAddParticipantModal() {
+      document.getElementById('participantModalTitle').textContent = '참여자 신규 등록';
+      document.getElementById('partId').value = '';
+      document.getElementById('partName').value = '';
+      document.getElementById('partMemberId').value = '';
+      document.getElementById('partPhone').value = '';
+      document.getElementById('partNote').value = '';
+      document.getElementById('partIsDropped').checked = false;
+      document.getElementById('partDroppedSessionWrap').style.display = 'none';
+      document.getElementById('participantModal').classList.remove('hidden');
+    }
+
+    function openEditParticipantModal(id) {
+      const prog = getCurrentProgram();
+      const p = prog.participants.find(item => item.id === id);
+      if (!p) return;
+
+      document.getElementById('participantModalTitle').textContent = '참여자 정보 수정';
+      document.getElementById('partId').value = p.id;
+      document.getElementById('partName').value = p.name;
+      document.getElementById('partMemberId').value = p.memberId || '';
+      document.getElementById('partPhone').value = p.phone || '';
+      document.getElementById('partNote').value = p.note || '';
+      document.getElementById('partIsDropped').checked = !!p.isDropped;
+      document.getElementById('partDroppedSession').value = p.droppedSession || 1;
+      document.getElementById('partDroppedSessionWrap').style.display = p.isDropped ? 'block' : 'none';
+      document.getElementById('participantModal').classList.remove('hidden');
+    }
+
+    function closeParticipantModal() {
+      document.getElementById('participantModal').classList.add('hidden');
+    }
+
+    function toggleDroppedSessionInput() {
+      const isChecked = document.getElementById('partIsDropped').checked;
+      document.getElementById('partDroppedSessionWrap').style.display = isChecked ? 'block' : 'none';
+    }
+
+    function saveParticipant(event) {
+      event.preventDefault();
+      const prog = getCurrentProgram();
+      if (!prog) return;
+
+      const id = document.getElementById('partId').value;
+      const name = document.getElementById('partName').value.trim();
+      const memberId = document.getElementById('partMemberId').value.trim();
+      const phone = document.getElementById('partPhone').value.trim();
+      const note = document.getElementById('partNote').value.trim();
+      const isDropped = document.getElementById('partIsDropped').checked;
+      const droppedSession = isDropped ? parseInt(document.getElementById('partDroppedSession').value) || 1 : null;
+
+      if (!name) {
+        alert('성명을 입력해 주세요.');
+        return;
+      }
+
+      if (id) {
+        const target = prog.participants.find(p => p.id === id);
+        if (target) {
+          target.name = name;
+          target.memberId = memberId;
+          target.phone = phone;
+          target.note = note;
+          target.isDropped = isDropped;
+          target.droppedSession = droppedSession;
+        }
+      } else {
+        prog.participants.push({
+          id: 'p_' + Date.now(),
+          name: name,
+          memberId: memberId,
+          phone: phone,
+          note: note,
+          isDropped: isDropped,
+          droppedSession: droppedSession
+        });
+      }
+
+      saveData();
+      closeParticipantModal();
+      renderAdminParticipantsSubtab();
+      showToast('참여자 정보가 저장되었습니다.');
+    }
+
+    function deleteParticipant(id) {
+      const prog = getCurrentProgram();
+      if (!prog) return;
+      const p = prog.participants.find(item => item.id === id);
+      if (!p) return;
+
+      if (confirm(`정말 [${p.name}] 참여자를 삭제하시겠습니까? 관련 출석 기록도 함께 정리됩니다.`)) {
+        prog.participants = prog.participants.filter(item => item.id !== id);
+        saveData();
+        renderAdminParticipantsSubtab();
+        showToast('참여자가 삭제되었습니다.');
+      }
+    }
+
+    // Excel Batch Upload Handling
+    let parsedExcelRows = [];
+
+    function openExcelUploadModal() {
+      parsedExcelRows = [];
+      document.getElementById('excelFileInput').value = '';
+      document.getElementById('excelPreviewArea').innerHTML = '';
+      document.getElementById('excelUploadModal').classList.remove('hidden');
+
+      const fileInput = document.getElementById('excelFileInput');
+      fileInput.onchange = handleExcelFileSelect;
+    }
+
+    function closeExcelUploadModal() {
+      document.getElementById('excelUploadModal').classList.add('hidden');
+    }
+
+    function handleExcelFileSelect(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(evt) {
+        try {
+          const data = new Uint8Array(evt.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet, { defval: '' });
+
+          if (!json || json.length === 0) {
+            alert('엑셀 파일에 데이터가 없습니다.');
+            return;
+          }
+
+          parsedExcelRows = [];
+          json.forEach(row => {
+            const nameKey = Object.keys(row).find(k => k.includes('성명') || k.includes('이름') || k.toLowerCase().includes('name'));
+            const memberIdKey = Object.keys(row).find(k => k.includes('회원번호') || k.includes('회원') || k.toLowerCase().includes('id'));
+            const phoneKey = Object.keys(row).find(k => k.includes('연락처') || k.includes('전화') || k.toLowerCase().includes('phone'));
+            const noteKey = Object.keys(row).find(k => k.includes('비고') || k.includes('메모') || k.toLowerCase().includes('note'));
+
+            const nameVal = nameKey ? String(row[nameKey]).trim() : '';
+            if (nameVal) {
+              parsedExcelRows.push({
+                name: nameVal,
+                memberId: memberIdKey ? String(row[memberIdKey]).trim() : '',
+                phone: phoneKey ? String(row[phoneKey]).trim() : '',
+                note: noteKey ? String(row[noteKey]).trim() : '',
+                isDropped: false,
+                droppedSession: null
+              });
+            }
+          });
+
+          const previewDiv = document.getElementById('excelPreviewArea');
+          previewDiv.innerHTML = `
+            <div style="font-weight:bold; margin-bottom:6px; color:var(--color-sora-deep);">총 ${parsedExcelRows.length}명의 참여자 데이터가 인식되었습니다.</div>
+            <table class="data-table" style="font-size:12px;">
+              <thead><tr><th>이름</th><th>회원번호</th><th>연락처</th><th>비고</th></tr></thead>
+              <tbody>
+                ${parsedExcelRows.slice(0, 5).map(r => `<tr><td>${r.name}</td><td>${r.memberId}</td><td>${r.phone}</td><td>${r.note}</td></tr>`).join('')}
+              </tbody>
+            </table>
+            ${parsedExcelRows.length > 5 ? `<div style="text-align:center; color:#777; font-size:11px; margin-top:4px;">... 외 ${parsedExcelRows.length - 5}명 추가 등록 대기</div>` : ''}
+          `;
+        } catch (err) {
+          alert('파일 파싱 중 오류가 발생했습니다: ' + err.message);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function processExcelUpload() {
+      if (!parsedExcelRows || parsedExcelRows.length === 0) {
+        alert('등록할 엑셀 데이터를 먼저 선택해 주세요.');
+        return;
+      }
+
+      const prog = getCurrentProgram();
+      if (!prog) return;
+
+      let addedCount = 0;
+      parsedExcelRows.forEach(item => {
+        prog.participants.push({
+          id: 'p_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+          name: item.name,
+          memberId: item.memberId,
+          phone: item.phone,
+          note: item.note,
+          isDropped: false,
+          droppedSession: null
+        });
+        addedCount++;
+      });
+
+      saveData();
+      closeExcelUploadModal();
+      renderAdminParticipantsSubtab();
+      showToast(`${addedCount}명의 참여자가 Excel에서 성공적으로 일괄 등록되었습니다.`);
+    }
+
+    function downloadExcelTemplate() {
+      const templateData = [
+        { "성명": "홍길동", "회원번호": "2026-0001", "연락처": "010-1234-5678", "비고": "스마트폰 기본반" },
+        { "성명": "김철수", "회원번호": "", "연락처": "010-9876-5432", "비고": "비회원 일반참여자" },
+        { "성명": "이영희", "회원번호": "2026-0004", "연락처": "010-5555-6666", "비고": "" }
+      ];
+
+      const ws = XLSX.utils.json_to_sheet(templateData);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "참여자등록양식");
+      XLSX.writeFile(wb, "노인복지관_출석부_참여자등록_서식.xlsx");
+      showToast('엑셀 등록 서식이 다운로드되었습니다.');
+    }
+
+    /* ==========================================================================
+       10. VIEW 2: ADMIN MANAGEMENT - SUBTAB 3 (ATTENDANCE DASHBOARD & ABSENT)
+       ========================================================================== */
+    function renderAdminAttendanceSubtab() {
+      const curProg = getCurrentProgram();
+      const curSess = getCurrentSession();
+      if (!curProg || !curSess) return;
+
+      const sessionTitle = curSess.isHoliday ? `휴강 (${curSess.date})` : `${curSess.round}회기 (${curSess.date})`;
+      document.getElementById('adminAttendanceTitle').textContent = `[${curProg.name}] ${sessionTitle} 출석 관리`;
+
+      const participants = curProg.participants || [];
+      const dupes = getDuplicateNamesSet(participants);
+
+      let attended = 0;
+      let absent = 0;
+      let pending = 0;
+
+      const tbody = document.getElementById('adminAttendanceTableBody');
+      tbody.innerHTML = '';
+
+      participants.forEach((p, idx) => {
+        const key = `${p.id}_${curSess.id}`;
+        const record = curProg.records[key];
+        const isAttended = record && record.status === 'attended';
+        const isAbsent = record && record.status === 'absent';
+        const isDroppedNow = p.isDropped && curSess.round >= (p.droppedSession || 999);
+
+        let statusText = '';
+        let sigThumb = '-';
+
+        if (isDroppedNow) {
+          statusText = '<span style="color:#888; font-weight:700;">중도포기</span>';
+        } else if (isAttended) {
+          attended++;
+          statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">✓ 출석완료</span>';
+          if (record.signature) {
+            sigThumb = `<img src="${record.signature}" class="sig-thumbnail" alt="서명">`;
+          }
+        } else if (isAbsent) {
+          absent++;
+          statusText = '<span style="color:var(--color-danger); font-weight:800;">✗ 결석</span>';
+        } else {
+          pending++;
+          statusText = '<span style="color:var(--color-pencil-gray); font-weight:600;">미기록 (대기)</span>';
+        }
+
+        const tr = document.createElement('tr');
+        const showId = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-weight:bold;">(동명이인: ${p.memberId || '회원번호 없음'})</span>` : '';
+
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><strong>${p.name}</strong> ${showId}</td>
+          <td>${p.memberId || '-'}</td>
+          <td>${p.phone || '-'}</td>
+          <td>${statusText}</td>
+          <td>${sigThumb}</td>
+          <td style="text-align: center;">
+            <div style="display:inline-flex; gap:6px;">
+              <button class="btn btn-sm btn-sora" onclick="adminOpenSign('${p.id}')">서명 돕기</button>
+              <button class="btn btn-sm ${isAbsent ? 'btn-sora' : 'btn-danger'}" onclick="adminToggleAbsent('${p.id}')">
+                ${isAbsent ? '결석 취소' : '결석 처리'}
+              </button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('admAttTotalCount').textContent = participants.length;
+      document.getElementById('admAttAttendedCount').textContent = attended;
+      document.getElementById('admAttAbsentCount').textContent = absent;
+      document.getElementById('admAttPendingCount').textContent = pending;
+    }
+
+    function adminOpenSign(participantId) {
+      const prog = getCurrentProgram();
+      const p = prog.participants.find(item => item.id === participantId);
+      if (!p) return;
+      activeParticipantForSig = p;
+      openSignatureModal(p);
+    }
+
+    function adminToggleAbsent(participantId) {
+      const prog = getCurrentProgram();
+      const sess = getCurrentSession();
+      if (!prog || !sess) return;
+      const key = `${participantId}_${sess.id}`;
+      const record = prog.records[key];
+
+      if (record && record.status === 'absent') {
+        delete prog.records[key];
+        showToast('결석 처리가 취소되었습니다.');
+      } else {
+        prog.records[key] = {
+          status: 'absent',
+          signature: null,
+          timestamp: new Date().toISOString()
+        };
+        showToast('결석 처리되었습니다.');
+      }
+      saveData();
+      renderAdminAttendanceSubtab();
+    }
+
+    /* ==========================================================================
+       11. VIEW 2: ADMIN MANAGEMENT - SUBTAB 4 (A4 ATTENDANCE SHEET & PRINT ENGINE)
+       ========================================================================== */
+    function renderAdminPrintSubtab() {
+      populatePrintMonthOptions();
+      renderA4PrintPages();
+    }
+
+    function populatePrintMonthOptions() {
+      const prog = getCurrentProgram();
+      const select = document.getElementById('printMonthSelect');
+      select.innerHTML = '';
+      if (!prog || !prog.sessions) return;
+
+      const monthsSet = new Set();
+      prog.sessions.forEach(s => {
+        if (s.date) {
+          const m = s.date.slice(0, 7);
+          monthsSet.add(m);
+        }
+      });
+
+      Array.from(monthsSet).sort().forEach(m => {
+        const [year, month] = m.split('-');
+        const opt = document.createElement('option');
+        opt.value = m;
+        opt.textContent = `${year}년 ${parseInt(month)}월`;
+        select.appendChild(opt);
+      });
+    }
+
+    function onPrintScopeChange() {
+      const scope = document.getElementById('printScopeType').value;
+      document.getElementById('printMonthSelect').style.display = (scope === 'month') ? 'inline-block' : 'none';
+      document.getElementById('printCustomRangeWrap').style.display = (scope === 'custom') ? 'inline-flex' : 'none';
+      renderA4PrintPages();
+    }
+
+    function getFilteredSessionsForPrint() {
+      const prog = getCurrentProgram();
+      if (!prog || !prog.sessions) return [];
+
+      const scope = document.getElementById('printScopeType').value;
+      const opSessions = getOperationalSessions(prog);
+
+      if (scope === 'all') {
+        return opSessions;
+      } else if (scope === 'month') {
+        const targetMonth = document.getElementById('printMonthSelect').value;
+        return opSessions.filter(s => s.date && s.date.startsWith(targetMonth));
+      } else if (scope === 'custom') {
+        const fromRound = parseInt(document.getElementById('printFromSession').value) || 1;
+        const toRound = parseInt(document.getElementById('printToSession').value) || 999;
+        return opSessions.filter(s => s.round >= fromRound && s.round <= toRound);
+      }
+      return opSessions;
+    }
+
+    function renderA4PrintPages() {
+      const container = document.getElementById('a4PagesContainer');
+      const prog = getCurrentProgram();
+      container.innerHTML = '';
+      if (!prog) return;
+
+      const sessionsToPrint = getFilteredSessionsForPrint();
+      if (sessionsToPrint.length === 0) {
+        container.innerHTML = '<div class="card" style="text-align:center; padding:40px;">해당 조건에 부합하는 회차 일정이 없습니다.</div>';
+        return;
+      }
+
+      const showPhone = document.getElementById('chkPrintPhone').checked;
+      const showMemberId = document.getElementById('chkPrintMemberId').checked;
+      const showRate = document.getElementById('chkPrintRate').checked;
+      const chunkSize = parseInt(document.getElementById('printSessionsPerPage').value) || 6;
+
+      const activeParticipants = (prog.participants || []).filter(p => !p.isDropped);
+      const droppedParticipants = (prog.participants || []).filter(p => p.isDropped);
+      const sortedParticipants = [...activeParticipants, ...droppedParticipants];
+
+      const sessionChunks = [];
+      for (let i = 0; i < sessionsToPrint.length; i += chunkSize) {
+        sessionChunks.push(sessionsToPrint.slice(i, i + chunkSize));
+      }
+
+      sessionChunks.forEach((chunkSessions, pageIndex) => {
+        const pageDiv = document.createElement('div');
+        pageDiv.className = 'a4-landscape-page';
+
+        const totalPages = sessionChunks.length;
+        const pageRoundRange = `${chunkSessions[0].round}회기 ~ ${chunkSessions[chunkSessions.length - 1].round}회기`;
+
+        pageDiv.innerHTML = `
+          <!-- Header Area -->
+          <div class="a4-header">
+            <h2 class="a4-title">노인복지관 프로그램 출석부 (${pageRoundRange})</h2>
+          </div>
+
+          <!-- Program Meta Info Table -->
+          <table class="a4-meta-table">
+            <tr>
+              <th>프로그램명</th>
+              <td colspan="3"><strong>${prog.name}</strong></td>
+              <th>운영기간</th>
+              <td>${prog.startDate || ''} ~ ${prog.endDate || ''}</td>
+            </tr>
+            <tr>
+              <th>담당자</th>
+              <td>${prog.manager || '-'}</td>
+              <th>강사명</th>
+              <td>${prog.instructor || '-'}</td>
+              <th>교육장소</th>
+              <td>${prog.location || '-'} (${prog.time || ''})</td>
+            </tr>
+          </table>
+
+          <!-- Attendance Grid -->
+          <table class="a4-attendance-table">
+            <thead>
+              <tr>
+                <th style="width: 32px;">연번</th>
+                <th style="width: 70px;">성명</th>
+                ${showMemberId ? '<th style="width: 75px;">회원번호</th>' : ''}
+                ${showPhone ? '<th style="width: 95px;">연락처</th>' : ''}
+                ${chunkSessions.map(s => `
+                  <th>
+                    ${s.round}회기<br>
+                    <span style="font-size:10px; font-weight:normal; color:#555;">${s.date ? s.date.slice(5) : ''}</span>
+                  </th>
+                `).join('')}
+                ${showRate ? '<th style="width: 55px;">출석률</th>' : ''}
+                <th style="width: 60px;">비고</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${sortedParticipants.map((p, idx) => {
+                const stats = calculateAttendanceRate(prog, p);
+                const isDropped = p.isDropped;
+                return `
+                  <tr style="${isDropped ? 'background-color: #fafafa;' : ''}">
+                    <td>${idx + 1}</td>
+                    <td><strong>${p.name}</strong></td>
+                    ${showMemberId ? `<td>${p.memberId || '-'}</td>` : ''}
+                    ${showPhone ? `<td>${p.phone || '-'}</td>` : ''}
+                    ${chunkSessions.map(s => {
+                      const key = `${p.id}_${s.id}`;
+                      const record = prog.records[key];
+                      const isDroppedInThisSession = isDropped && s.round >= (p.droppedSession || 999);
+
+                      if (isDroppedInThisSession) {
+                        return `<td class="text-dropped" title="중도포기">-</td>`;
+                      } else if (record && record.status === 'attended') {
+                        if (record.signature) {
+                          return `<td class="a4-sig-cell"><img src="${record.signature}" alt="서명"></td>`;
+                        } else {
+                          return `<td><span style="font-size:10px; font-weight:bold;">서명</span></td>`;
+                        }
+                      } else if (record && record.status === 'absent') {
+                        return `<td class="text-absent">결석</td>`;
+                      } else {
+                        return `<td></td>`;
+                      }
+                    }).join('')}
+                    ${showRate ? `<td><strong>${stats.rate}%</strong></td>` : ''}
+                    <td style="font-size:10px; color:#555;">
+                      ${isDropped ? '중도포기' : (p.note || '')}
+                    </td>
+                  </tr>
+                `;
+              }).join('')}
+            </tbody>
+          </table>
+
+          <!-- Footer Area -->
+          <div class="a4-footer">
+            <div>* 비고: 중도포기자는 하단에 배치되며, 전체 운영 회차 기준으로 출석률이 자동 계산됩니다.</div>
+            <div>페이지: ${pageIndex + 1} / ${totalPages} · 출력일자: ${new Date().toISOString().slice(0,10)}</div>
+          </div>
+        `;
+        container.appendChild(pageDiv);
+      });
+    }
+
+    function triggerPrint() {
+      window.print();
+    }
+
+    /* ==========================================================================
+       12. TOAST NOTIFICATIONS & BOOTSTRAP
+       ========================================================================== */
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 3000);
+    }
+
+    function initApp() {
+      loadData();
+      populateGlobalSelectors();
+      initSignatureCanvas();
+      switchRole('kiosk');
+    }
+
+    window.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>

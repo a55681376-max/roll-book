@@ -6,6 +6,8 @@
   <title>노인복지관 배움터 전자출석부</title>
   <!-- SheetJS CDN for Excel parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- Supabase JS Client v2 CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <!-- Google Fonts: Nunito & Noto Sans KR -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -957,6 +959,10 @@
 
     <!-- Header Actions -->
     <div class="header-actions">
+      <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
+        <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
+        <span>⚡ Supabase</span>
+      </button>
       <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
       <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
       <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
@@ -1495,6 +1501,51 @@
     </div>
   </div>
 
+  <!-- Modal 6: Supabase Cloud Database Settings Modal -->
+  <div id="supabaseModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 580px;">
+      <div class="modal-header">
+        <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">클라우드 데이터베이스</span>
+        <h3 class="modal-title">⚡ 수파베이스 (Supabase) 연동 설정</h3>
+      </div>
+      <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 16px;">
+        수파베이스를 연결하면 여러 PC, 태블릿, 스마트폰에서 <strong>실시간 출석 데이터가 공유 및 영구 보관</strong>됩니다.
+        (미설정 시 현재 브라우저의 로컬 저장소에 안전하게 유지됩니다.)
+      </p>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Supabase Project URL *</label>
+        <input type="text" id="supabaseUrlInput" placeholder="https://your-project.supabase.co" autocomplete="off">
+        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Supabase 대시보드 > Project Settings > API > Project URL</small>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 14px;">
+        <label>Supabase Anon (Public) Key *</label>
+        <textarea id="supabaseKeyInput" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family:monospace; font-size:12px;"></textarea>
+        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Project Settings > API > Project API keys > `anon` `public` 키</small>
+      </div>
+
+      <div id="supabaseStatusNotice" style="padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; background: #f3f4f6; color: #374151;">
+        현재 상태: 로컬 브라우저 저장소 모드 (미연동)
+      </div>
+
+      <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
+        <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 4px;">💡 Supabase 테이블 설정 팁</div>
+        <div style="font-size: 12px; color: #64748b; line-height: 1.4;">
+          프로젝트 폴더 내 <code>supabase_schema.sql</code> 파일을 Supabase SQL Editor에서 실행하시면 테이블 및 RLS 설정이 3초 만에 완료됩니다.
+        </div>
+      </div>
+
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-sm btn-danger" onclick="disconnectSupabase()">연동 해제 (로컬 전환)</button>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" class="btn" onclick="closeSupabaseModal()">닫기</button>
+          <button type="button" class="btn btn-sora" onclick="saveAndTestSupabase()">저장 및 연결</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Toast Notification Container -->
   <div id="toast"></div>
 
@@ -1609,9 +1660,251 @@
     let activeParticipantForSig = null;
 
     /* ==========================================================================
+       2. SUPABASE CLOUD DATABASE CONFIGURATION & SYNC
+       ========================================================================== */
+    const SUPABASE_CONFIG_KEY = 'SENIOR_ATTENDANCE_SUPABASE_CFG_V1';
+    const SUPABASE_TABLE_NAME = 'attendance_data';
+    const SUPABASE_ROW_ID = 'main_attendance_state';
+
+    // 기본 설정값 (사용자가 코드에 직접 넣거나 모달에서 입력 가능)
+    const DEFAULT_SUPABASE_CONFIG = {
+      url: "",  // 예: "https://your-project.supabase.co"
+      anonKey: "" // 예: "eyJhbGciOi..."
+    };
+
+    let supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
+    let supabaseClient = null;
+    let isSupabaseConnected = false;
+    let isSyncing = false;
+    let realtimeChannel = null;
+
+    function loadSupabaseConfig() {
+      const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
+      if (stored) {
+        try {
+          supabaseConfig = JSON.parse(stored);
+        } catch (e) {
+          supabaseConfig = { ...DEFAULT_SUPABASE_CONFIG };
+        }
+      }
+    }
+
+    function saveSupabaseConfig(url, anonKey) {
+      supabaseConfig = { url: url.trim(), anonKey: anonKey.trim() };
+      localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(supabaseConfig));
+    }
+
+    // Supabase 클라이언트 초기화 및 연결
+    async function initSupabaseClient() {
+      loadSupabaseConfig();
+      if (!supabaseConfig.url || !supabaseConfig.anonKey) {
+        setSupabaseStatus(false, '로컬 모드 (미연동)');
+        return false;
+      }
+
+      if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+        console.warn('Supabase JS SDK가 아직 로드되지 않았습니다.');
+        setSupabaseStatus(false, 'SDK 로드 대기 중');
+        return false;
+      }
+
+      try {
+        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
+        
+        // 연결 테스트: attendance_data 테이블 조회
+        const { data, error } = await supabaseClient
+          .from(SUPABASE_TABLE_NAME)
+          .select('id, updated_at')
+          .eq('id', SUPABASE_ROW_ID)
+          .maybeSingle();
+
+        if (error) {
+          console.warn('Supabase 접속 경고:', error.message);
+          setSupabaseStatus(false, `연결 실패 (${error.message})`, true);
+          return false;
+        }
+
+        isSupabaseConnected = true;
+        setSupabaseStatus(true, '클라우드 동기화 연결됨');
+        setupRealtimeSubscription();
+        return true;
+      } catch (err) {
+        console.error('Supabase 초기화 오류:', err);
+        setSupabaseStatus(false, '연결 오류', true);
+        return false;
+      }
+    }
+
+    function setSupabaseStatus(connected, text, isError = false) {
+      isSupabaseConnected = connected;
+      const dot = document.getElementById('supabaseDot');
+      const btn = document.getElementById('supabaseStatusBtn');
+      const notice = document.getElementById('supabaseStatusNotice');
+
+      if (dot) {
+        dot.style.background = connected ? '#22c55e' : (isError ? '#ef4444' : '#94a3b8');
+      }
+      if (btn) {
+        btn.title = `Supabase: ${text}`;
+      }
+      if (notice) {
+        if (connected) {
+          notice.style.background = '#ecfdf5';
+          notice.style.color = '#065f46';
+          notice.innerHTML = `✅ <strong>연결 성공:</strong> 클라우드 실시간 동기화 활성화됨 (${supabaseConfig.url})`;
+        } else if (isError) {
+          notice.style.background = '#fef2f2';
+          notice.style.color = '#991b1b';
+          notice.innerHTML = `⚠️ <strong>연결 오류:</strong> ${text}`;
+        } else {
+          notice.style.background = '#f3f4f6';
+          notice.style.color = '#374151';
+          notice.innerHTML = `현재 상태: 로컬 브라우저 저장소 모드 (미연동)`;
+        }
+      }
+    }
+
+    // 클라우드 데이터베이스에서 불러오기
+    async function fetchFromSupabase() {
+      if (!supabaseClient || !isSupabaseConnected) return null;
+      try {
+        const { data, error } = await supabaseClient
+          .from(SUPABASE_TABLE_NAME)
+          .select('payload, updated_at')
+          .eq('id', SUPABASE_ROW_ID)
+          .maybeSingle();
+
+        if (error) {
+          console.error('Supabase 데이터 로드 실패:', error);
+          return null;
+        }
+        if (data && data.payload) {
+          return data.payload;
+        }
+      } catch (e) {
+        console.error('fetchFromSupabase 에러:', e);
+      }
+      return null;
+    }
+
+    // 클라우드 데이터베이스로 저장하기
+    async function syncToSupabase() {
+      if (!supabaseClient || !isSupabaseConnected || isSyncing) return;
+      isSyncing = true;
+      try {
+        const { error } = await supabaseClient
+          .from(SUPABASE_TABLE_NAME)
+          .upsert({
+            id: SUPABASE_ROW_ID,
+            payload: appData,
+            updated_at: new Date().toISOString()
+          }, { onConflict: 'id' });
+
+        if (error) {
+          console.error('Supabase 저장 실패:', error);
+        } else {
+          console.log('⚡ Supabase 클라우드 동기화 완료');
+        }
+      } catch (e) {
+        console.error('syncToSupabase 에러:', e);
+      } finally {
+        isSyncing = false;
+      }
+    }
+
+    // 실시간 변경 감지 (Realtime Subscription)
+    function setupRealtimeSubscription() {
+      if (!supabaseClient || !isSupabaseConnected) return;
+      if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+      }
+      try {
+        realtimeChannel = supabaseClient
+          .channel('public:attendance_data')
+          .on('postgres_changes', {
+            event: '*',
+            schema: 'public',
+            table: SUPABASE_TABLE_NAME,
+            filter: `id=eq.${SUPABASE_ROW_ID}`
+          }, (payload) => {
+            if (payload.new && payload.new.payload) {
+              // 다른 기기에서 갱신된 데이터 반영
+              appData = payload.new.payload;
+              localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+              renderCurrentView();
+              showToast('☁️ 다른 기기의 출석 변경사항이 실시간 동기화되었습니다.');
+            }
+          })
+          .subscribe();
+      } catch (err) {
+        console.warn('Realtime subscription 설정 실패:', err);
+      }
+    }
+
+    /* Supabase Modal Controls */
+    function openSupabaseModal() {
+      loadSupabaseConfig();
+      document.getElementById('supabaseUrlInput').value = supabaseConfig.url || '';
+      document.getElementById('supabaseKeyInput').value = supabaseConfig.anonKey || '';
+      setSupabaseStatus(isSupabaseConnected, isSupabaseConnected ? '연결됨' : '미연동');
+      document.getElementById('supabaseModal').classList.remove('hidden');
+    }
+
+    function closeSupabaseModal() {
+      document.getElementById('supabaseModal').classList.add('hidden');
+    }
+
+    async function saveAndTestSupabase() {
+      const url = document.getElementById('supabaseUrlInput').value.trim();
+      const key = document.getElementById('supabaseKeyInput').value.trim();
+
+      if (!url || !key) {
+        alert('Supabase URL과 Anon Key를 모두 입력해주세요.');
+        return;
+      }
+
+      saveSupabaseConfig(url, key);
+      showToast('Supabase 연결을 시도하는 중입니다...');
+      const ok = await initSupabaseClient();
+      if (ok) {
+        // 기존 로컬 데이터가 있다면 Supabase에 최초 업로드 여부 확인
+        const cloudData = await fetchFromSupabase();
+        if (!cloudData) {
+          // 클라우드에 아직 없으면 현재 데이터 업로드
+          await syncToSupabase();
+          showToast('⚡ Supabase 연결 성공! 현재 데이터가 클라우드에 업로드되었습니다.');
+        } else {
+          // 클라우드에 데이터가 있으면 클라우드 데이터로 갱신
+          appData = cloudData;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          initAppUI();
+          showToast('⚡ Supabase 연결 성공! 클라우드 최신 데이터를 불러왔습니다.');
+        }
+        closeSupabaseModal();
+      } else {
+        alert('Supabase 연결에 실패했습니다. URL, Key 및 테이블(attendance_data) 생성 여부를 확인해주세요.\n(supabase_schema.sql 가이드를 참고하세요)');
+      }
+    }
+
+    function disconnectSupabase() {
+      if (confirm('Supabase 연동을 해제하고 브라우저 로컬 저장소 모드로 전환하시겠습니까?')) {
+        saveSupabaseConfig('', '');
+        supabaseClient = null;
+        if (realtimeChannel) {
+          try { supabaseClient?.removeChannel(realtimeChannel); } catch (e) {}
+          realtimeChannel = null;
+        }
+        setSupabaseStatus(false, '로컬 모드');
+        closeSupabaseModal();
+        showToast('로컬 저장소 모드로 전환되었습니다.');
+      }
+    }
+
+    /* ==========================================================================
        2. INITIALIZATION & STORAGE
        ========================================================================== */
-    function loadData() {
+    async function loadData() {
+      // 1. 먼저 로컬 스토리지 데이터 로드 (즉시 렌더링 지원)
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
@@ -1621,12 +1914,36 @@
         }
       } else {
         appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        saveData();
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      }
+
+      // 2. Supabase가 연결되어 있다면 클라우드 최신본으로 백그라운드 동기화
+      if (isSupabaseConnected && supabaseClient) {
+        const cloudData = await fetchFromSupabase();
+        if (cloudData) {
+          appData = cloudData;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          renderCurrentView();
+        }
       }
     }
 
     function saveData() {
+      // 1. 로컬 저장 (오프라인/즉각 반응)
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      // 2. 수파베이스 클라우드 동기화 (연결된 경우)
+      if (isSupabaseConnected && supabaseClient) {
+        syncToSupabase();
+      }
+    }
+
+    function renderCurrentView() {
+      populateGlobalSelectors();
+      if (currentRole === 'kiosk') {
+        renderKioskView();
+      } else if (currentRole === 'admin') {
+        switchAdminSubtab(currentAdminTab);
+      }
     }
 
     function resetToSampleData() {
@@ -3030,11 +3347,23 @@
       }, 3000);
     }
 
-    function initApp() {
-      loadData();
+    async function initApp() {
+      await loadData();
       populateGlobalSelectors();
       initSignatureCanvas();
       switchRole('kiosk');
+      
+      // Supabase 클라우드 동기화 비동기 초기화
+      initSupabaseClient().then(connected => {
+        if (connected) {
+          loadData(); // 클라우드 데이터 우선 동기화
+        }
+      });
+    }
+
+    function initAppUI() {
+      populateGlobalSelectors();
+      renderCurrentView();
     }
 
     window.addEventListener('DOMContentLoaded', initApp);

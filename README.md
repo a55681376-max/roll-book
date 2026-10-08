@@ -67,10 +67,24 @@ $$\text{출석률} = \frac{\text{출석한 회차}}{\text{전체 실제 운영 �
 
 ---
 
+## ⚡ 수파베이스 (Supabase) 클라우드 DB 연동 가이드
+
+여러 대의 PC, 태블릿, 스마트폰에서 **출석 데이터를 실시간으로 동기화**하려면 Supabase를 1분 만에 연결할 수 있습니다:
+
+1. **[Supabase](https://supabase.com)**에 로그인하고 새 프로젝트를 생성합니다.
+2. 대시보드 좌측 **[SQL Editor]**로 이동하여 `supabase_schema.sql` 파일의 내용을 붙여넣고 **[Run]**을 실행합니다.
+3. **[Project Settings] > [API]**에서 아래 2가지 값을 확인합니다:
+   - `Project URL`
+   - `anon` `public` API 키
+4. 웹앱 우측 상단의 **[⚡ Supabase]** 버튼을 클릭하고 URL과 키를 입력한 뒤 **[저장 및 연결]**을 누르면 끝납니다!
+5. **실시간 양방향 동기화**: 다른 기기에서 출석 서명 시, 열려 있는 모든 관리자/키오스크 화면에 즉각 실시간 반영됩니다.
+
+---
+
 ## 💡 기술 스택
 
 - **Frontend**: HTML5 + CSS3 + Vanilla JavaScript (단일 파일)
-- **저장소**: 브라우저 `localStorage` (서버·DB 불필요)
+- **Database & Sync**: [Supabase (PostgreSQL + Realtime)](https://supabase.com/) & 브라우저 `localStorage` (하이브리드 지원)
 - **Excel 처리**: [SheetJS (xlsx)](https://sheetjs.com/) CDN
 - **서명**: HTML5 Canvas API
 

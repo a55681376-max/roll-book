@@ -1875,7 +1875,7 @@
     let cloudSaveFailed = false;
     async function secureRequest(action, body = {}, token = cloudToken) {
       if (!supabaseClient) throw new Error('데이터 연결을 확인해 주세요.');
-      const { data, error } = await supabaseClient.rpc('rollbook_api', {action, session_token: token, body});
+      const { data, error } = await supabaseClient.functions.invoke('rollbook-api', {body:{action, session_token: token, body}});
       if (error) throw new Error('서버 연결을 확인해 주세요.');
       if (!data?.ok) {
         if (data?.expired) { cloudToken = ''; showEntryScreen(); }

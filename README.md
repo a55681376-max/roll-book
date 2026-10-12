@@ -38,7 +38,7 @@ GitHub main에 변경사항을 올리면 연결된 Netlify 프로젝트 rollbook
 
 기존 public.attendance_data 테이블과 행을 보존합니다. supabase_security.sql은 원본 보관, 서버 계정·세션 관리, 인증 API, RLS 설정을 기록한 보안 전환 스크립트입니다. 인증되지 않은 브라우저의 직접 테이블 접근은 RLS와 권한에서 모두 차단합니다.
 
-인증은 Supabase Auth가 아닌 서버의 rollbook_api에서 처리합니다. 비밀번호는 bcrypt 해시로 보관하고, 무작위 세션 토큰의 해시를 서버에 저장합니다. 토큰은 브라우저 메모리에만 유지하며 8시간 후 만료됩니다. 관리자만 계정에 접근하고, 출석 화면에서는 기존 참여자·회차의 출석 기록만 수정합니다. 담당자 관리 화면으로 들어갈 때는 다시 인증합니다.
+인증은 Supabase Auth가 아닌 서버의 rollbook-api 함수와 rollbook_api에서 처리합니다. 브라우저에서 DB 함수를 직접 호출할 수 없으며 서버만 실행합니다. 비밀번호는 bcrypt 해시로 보관하고, 무작위 세션 토큰의 해시를 서버에 저장합니다. 토큰은 브라우저 메모리에만 유지하며 8시간 후 만료됩니다. 관리자만 계정에 접근하고, 출석 화면에서는 기존 참여자·회차의 출석 기록만 수정합니다. 담당자 관리 화면으로 들어갈 때는 다시 인증합니다.
 
 공개 코드에는 publishable 연결키만 사용하며 비밀키와 service_role 키를 넣지 않습니다. 비밀키 입력도 거부합니다. 참여자 자료와 비밀번호는 localStorage에 새로 저장하지 않습니다. 인증 후 예전 브라우저 캐시는 제거합니다.
 
@@ -53,6 +53,7 @@ HTML5, CSS3, Vanilla JavaScript, Canvas 전자서명, SheetJS 엑셀 처리, Sup
 ## 개발 확인
 
 - node tests/auth-check.cjs: 서버 API 연동 흐름, 역할 구분, 계정 변경, 비밀번호 가림, 세로·가로 인쇄 검사
+- node tests/cloud-security.cjs: 배포된 서버 API와 인증 없는 테이블·DB 함수 접근 차단 검사 (자료를 변경하지 않음)
 - node tools/preview.cjs: http://127.0.0.1:8765 에서 실제 DB 요청을 하지 않는 샘플 화면 실행. 샘플 인증 정보는 tools/preview-api.js에만 있으며 실제 사이트에서는 사용할 수 없습니다.
 
 기획 요구사항은 노인복지관_전자출석부_PRD_v0.1.md, 디자인 참고는 DESIGN.md와 DESIGN2.md에 있습니다.

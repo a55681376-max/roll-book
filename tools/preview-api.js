@@ -7,7 +7,7 @@
   const sessions=new Map();
   const copy=x=>JSON.parse(JSON.stringify(x));
   const clean=a=>{const {password,...rest}=a;return rest;};
-  window.supabase={createClient(){return {async rpc(name,args){
+  window.supabase={createClient(){return {functions:{async invoke(name,{body:args}){
     const {action,session_token:token,body}=args;
     const ok=x=>({data:{ok:true,...x}}),fail=error=>({data:{ok:false,error}});
     if(action==='status')return ok({secure:true});
@@ -36,5 +36,5 @@
     }
     if(action==='account_archive'){const a=accounts.find(a=>a.id===body.id);if(a)a.disabled=true;return ok();}
     return fail('지원하지 않는 요청입니다.');
-  }}}};
+  }}}}};
 })();

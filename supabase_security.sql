@@ -168,7 +168,8 @@ EXCEPTION WHEN unique_violation THEN
 END;
 $$;
 REVOKE ALL ON FUNCTION public.rollbook_api(text,text,jsonb) FROM PUBLIC;
-GRANT EXECUTE ON FUNCTION public.rollbook_api(text,text,jsonb) TO anon,authenticated;
+REVOKE EXECUTE ON FUNCTION public.rollbook_api(text,text,jsonb) FROM anon,authenticated;
+GRANT EXECUTE ON FUNCTION public.rollbook_api(text,text,jsonb) TO service_role;
 
 -- 공개 테이블의 직접 접근은 RLS와 권한에서 모두 차단한다.
 -- 정책만 교체하며 테이블 및 행은 삭제하지 않는다.
@@ -178,3 +179,9 @@ DROP POLICY IF EXISTS "Allow anon insert/update access on attendance_data" ON pu
 CREATE POLICY "Block direct attendance access" ON public.attendance_data AS RESTRICTIVE FOR ALL TO anon,authenticated USING(false) WITH CHECK(false);
 REVOKE ALL ON public.attendance_data FROM anon,authenticated;
 NOTIFY pgrst,'reload schema';
+
+-- 서버 전용 자료에도 명시적인 접근 차단 정책을 둔다.
+CREATE POLICY "Server only" ON rollbook_private.accounts FOR ALL TO anon,authenticated USING(false) WITH CHECK(false);
+CREATE POLICY "Server only" ON rollbook_private.sessions FOR ALL TO anon,authenticated USING(false) WITH CHECK(false);
+CREATE POLICY "Server only" ON rollbook_private.login_limits FOR ALL TO anon,authenticated USING(false) WITH CHECK(false);
+CREATE POLICY "Server only" ON rollbook_private.state_history FOR ALL TO anon,authenticated USING(false) WITH CHECK(false);

@@ -3726,6 +3726,7 @@
        12. TOAST NOTIFICATIONS & BOOTSTRAP
        ========================================================================== */
     function showToast(msg) {
+      if (currentRole === 'entry') return;
       const toast = document.getElementById('toast');
       toast.textContent = msg;
       toast.classList.add('show');

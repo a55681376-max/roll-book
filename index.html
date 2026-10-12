@@ -965,7 +965,6 @@
     .program-selector-group .bar-label { margin-left:0 !important; }
     .a4-portrait-page { max-width:720px; }
     .a4-portrait-page .a4-attendance-table { table-layout:fixed; font-size:10px; }
-    .a4-portrait-page .a4-attendance-table th { width:auto !important; }
     .a4-portrait-page .a4-meta-table { font-size:11px; }
     .a4-portrait-page .a4-meta-table th,.a4-portrait-page .a4-meta-table td { padding:5px; }
     .a4-portrait-page .a4-sig-cell img { max-width:100%; }
@@ -1942,11 +1941,11 @@
         if (connected) {
           notice.style.background = '#ecfdf5';
           notice.style.color = '#065f46';
-          notice.innerHTML = ` <strong>연결 성공:</strong> 로그인 후 자료에 접근할 수 있습니다. (${supabaseConfig.url})`;
+          notice.textContent = '연결 성공: 로그인 후 자료에 접근할 수 있습니다.';
         } else if (isError) {
           notice.style.background = '#fef2f2';
           notice.style.color = '#991b1b';
-          notice.innerHTML = ` <strong>연결 오류:</strong> ${text}`;
+          notice.textContent = '연결 오류: ' + text;
         } else {
           notice.style.background = '#f3f4f6';
           notice.style.color = '#374151';
@@ -2817,7 +2816,7 @@
         const card = document.createElement('div');
         card.className = `session-item-card ${s.isHoliday ? 'is-holiday' : ''}`;
 
-        const roundTitle = s.isHoliday ? `[휴강일]` : `${s.round || opRoundCounter}회차`;
+        const roundTitle = s.isHoliday ? `[휴강일]` : `${Number(s.round) || opRoundCounter}회차`;
         if (!s.isHoliday) opRoundCounter++;
 
         card.innerHTML = `
@@ -3080,7 +3079,7 @@
 
         const showDupeWarning = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-size:12px; font-weight:800;">(동명이인)</span>` : '';
         const droppedBadge = p.isDropped
-          ? `<span style="color:var(--color-danger); font-weight:800;">[${p.droppedSession || 1}회차 중도포기]</span>`
+          ? `<span style="color:var(--color-danger); font-weight:800;">[${Number(p.droppedSession) || 1}회차 중도포기]</span>`
           : `<span style="color:var(--color-pencil-gray); font-weight:600;">정상 참여</span>`;
 
         tr.innerHTML = `
@@ -3512,7 +3511,7 @@
         pageDiv.className = 'a4-landscape-page' + (orientation === 'portrait' ? ' a4-portrait-page' : '');
 
         const totalPages = sessionChunks.length;
-        const pageRoundRange = `${chunkSessions[0].round}회차 ~ ${chunkSessions[chunkSessions.length - 1].round}회차`;
+        const pageRoundRange = `${Number(chunkSessions[0].round)}회차 ~ ${Number(chunkSessions[chunkSessions.length - 1].round)}회차`;
 
         pageDiv.innerHTML = `
           <!-- Header Area -->
@@ -3549,7 +3548,7 @@
                 ${showPhone ? '<th style="width: 95px;">연락처</th>' : ''}
                 ${chunkSessions.map(s => `
                   <th>
-                    ${s.round}회차<br>
+                    ${Number(s.round)}회차<br>
                     <span style="font-size:10px; font-weight:normal; color:#555;">${escapeHtml(s.date ? s.date.slice(5) : '')}</span>
                   </th>
                 `).join('')}

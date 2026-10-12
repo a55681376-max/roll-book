@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 
   <style>
+    .attendance-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; color:#111; flex-shrink:0; }
     .hidden { display: none !important; }
     /* ==========================================================================
        DESIGN SYSTEM TOKENS: SOFT SORA BLUE THEME (소라색 테마 + 통통한 라운드)
@@ -941,10 +942,15 @@
   <!-- Top Site Header (소라색 & 책/연필 마스코트) -->
   <header class="site-header">
     <div class="brand-area" onclick="switchRole('kiosk')" title="출석 화면으로 이동">
-      <div class="mascot-avatar">📚</div>
+      <div class="attendance-icon" aria-hidden="true">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="5" y="4" width="14" height="17" rx="2"/>
+          <rect x="9" y="2" width="6" height="4" rx="1"/>
+          <path d="m8 11 1 1 2-2M13 11h3m-8 6 1 1 2-2m2 1h3"/>
+        </svg>
+      </div>
       <div class="brand-text">
-        <h1 id="headerOrgTitleDisplay">노인복지관 전자출석부</h1>
-        <p id="headerOrgSubDisplay">이름을 선택하고 서명하는 출석부</p>
+        <h1 id="headerOrgTitleDisplay">전자출석부</h1>
       </div>
     </div>
 
@@ -996,11 +1002,9 @@
   <main class="main-content">
     <section id="entryView" class="view-panel active">
       <div class="card" style="max-width:640px;margin:40px auto;text-align:center;padding:36px;">
-        <h2>전자출석부</h2>
-        <p style="margin:16px 0 28px;">사용할 화면을 선택해 주세요.</p>
         <div style="display:flex;gap:16px;flex-wrap:wrap;">
-          <button class="btn btn-sora" style="flex:1;min-width:200px;padding:24px;flex-direction:column;gap:12px;font-size:22px;" onclick="openAdminLoginModal('general', 'attendance')"><span>담당자 인증</span><small style="font-size:14px;line-height:1.6;">참여자 출석과 출석부 관리</small></button>
-          <button class="btn" style="flex:1;min-width:200px;padding:24px;flex-direction:column;gap:12px;font-size:22px;" onclick="openAdminLoginModal('master', 'settings')"><span>관리자 인증</span><small style="font-size:14px;line-height:1.6;">담당자 계정과 관리자 계정 설정</small></button>
+          <button class="btn btn-sora" style="flex:1;min-width:200px;padding:32px 24px;font-size:22px;" onclick="openAdminLoginModal('general', 'attendance')">담당자 인증</button>
+          <button class="btn" style="flex:1;min-width:200px;padding:32px 24px;font-size:22px;" onclick="openAdminLoginModal('master', 'settings')">관리자 인증</button>
         </div>
       </div>
     </section>
@@ -2156,14 +2160,9 @@
        ========================================================================== */
     function updateOrgBrandDisplay() {
       const orgTitle = document.getElementById('headerOrgTitleDisplay');
-      const orgSub = document.getElementById('headerOrgSubDisplay');
-      const currentOrgName = (appData && appData.orgName) ? appData.orgName : DEFAULT_ORG_NAME;
 
       if (orgTitle) {
-        orgTitle.textContent = `${currentOrgName} 전자출석부`;
-      }
-      if (orgSub) {
-        orgSub.textContent = '이름을 선택하고 서명하는 출석부';
+        orgTitle.textContent = '전자출석부';
       }
     }
 

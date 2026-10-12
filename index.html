@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>노인복지관 배움터 전자출석부</title>
-  <!-- SheetJS CDN for Excel parsing -->
+  <!-- SheetJS CDN for 엑셀 parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Supabase JS Client v2 CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -14,6 +14,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 
   <style>
+    .hidden { display: none !important; }
     /* ==========================================================================
        DESIGN SYSTEM TOKENS: SOFT SORA BLUE THEME (소라색 테마 + 통통한 라운드)
        ========================================================================== */
@@ -33,7 +34,7 @@
       --color-pencil-gray: #64748b;
       --color-faded-gray: #cbd5e1;
       --color-border-light: #e2e8f0;
-      
+
       /* Status Palette */
       --color-danger: #ef4444;
       --color-danger-shadow: #dc2626;
@@ -140,7 +141,7 @@
       letter-spacing: -0.01em;
     }
 
-    /* Role Switcher Tabs (키오스크 & 관리자만) */
+    /* Role Switcher Tabs (참여자 출석 & 관리자만) */
     .role-tabs {
       display: flex;
       gap: 8px;
@@ -943,22 +944,23 @@
       <div class="mascot-avatar">📚</div>
       <div class="brand-text">
         <h1 id="headerOrgTitleDisplay">노인복지관 전자출석부</h1>
-        <p id="headerOrgSubDisplay">Senior Attendance System · 소라색 배움터</p>
+        <p id="headerOrgSubDisplay">이름을 선택하고 서명하는 출석부</p>
       </div>
     </div>
 
-    <!-- Role Switching Tabs (강사 삭제, 키오스크 & 관리자 로그인만) -->
-    <div class="role-tabs">
+    <!-- Role Switching Tabs (강사 삭제, 참여자 출석 & 관리자 로그인만) -->
+    <div class="role-tabs hidden" id="roleNavigation">
       <button class="role-btn active" id="tabKioskBtn" onclick="switchRole('kiosk')">
-        <span>✍️</span> 참여자 출석 (키오스크)
+        <span>✍️</span> 참여자 출석
       </button>
       <button class="role-btn" id="tabAdminBtn" onclick="tryEnterAdminMode()">
-        <span>🔒</span> 직원 (관리자)
+        <span>🔒</span> 담당자
       </button>
+      <button class="role-btn" onclick="logoutAdmin()">로그아웃</button>
     </div>
 
     <!-- Header Actions -->
-    <div class="header-actions">
+    <div class="header-actions hidden" id="headerTools">
       <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
         <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
         <span>⚡ Supabase</span>
@@ -971,7 +973,7 @@
   </header>
 
   <!-- Global Program Selector Bar -->
-  <div class="main-content" style="padding-bottom: 0;">
+  <div class="main-content hidden" id="programNavigation" style="padding-bottom: 0;">
     <div class="program-bar">
       <div class="program-selector-group">
         <span class="bar-label">프로그램</span>
@@ -992,11 +994,21 @@
   </div>
 
   <main class="main-content">
+    <section id="entryView" class="view-panel active">
+      <div class="card" style="max-width:640px;margin:40px auto;text-align:center;padding:36px;">
+        <h2>전자출석부</h2>
+        <p style="margin:16px 0 28px;">사용할 화면을 선택해 주세요.</p>
+        <div style="display:flex;gap:16px;flex-wrap:wrap;">
+          <button class="btn btn-sora" style="flex:1;min-width:200px;padding:24px;flex-direction:column;gap:12px;font-size:22px;" onclick="openAdminLoginModal('general', 'attendance')"><span>담당자 인증</span><small style="font-size:14px;line-height:1.6;">참여자 출석과 출석부 관리</small></button>
+          <button class="btn" style="flex:1;min-width:200px;padding:24px;flex-direction:column;gap:12px;font-size:22px;" onclick="openAdminLoginModal('master', 'settings')"><span>관리자 인증</span><small style="font-size:14px;line-height:1.6;">담당자 계정과 관리자 계정 설정</small></button>
+        </div>
+      </div>
+    </section>
 
     <!-- ====================================================================
-         VIEW 1: PARTICIPANT ATTENDANCE KIOSK (소라색 & 책/연필 귀여운 키오스크)
+         VIEW 1: PARTICIPANT ATTENDANCE KIOSK (소라색 & 책/연필 귀여운 참여자 출석)
          ==================================================================== -->
-    <section id="kioskView" class="view-panel active">
+    <section id="kioskView" class="view-panel">
       <div class="kiosk-hero">
         <div class="kiosk-hero-text">
           <div class="hero-badge">📖 행복한 배움터 출석체크</div>
@@ -1009,7 +1021,7 @@
 
           <div class="kiosk-search-box">
             <input type="text" id="kioskSearchInput" placeholder="이름으로 쉽게 찾기 (예: 홍길동)" oninput="renderKioskGrid()">
-            <button class="btn btn-sora" onclick="clearKioskSearch()">전체보기</button>
+            <button class="btn btn-sora" onclick="clearKioskSearch()">전체 보기</button>
           </div>
         </div>
 
@@ -1036,27 +1048,27 @@
           <div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-weight:900; color:var(--color-charcoal);" id="adminRoleNameDisplay">관리자 인증됨</span>
-              <span id="adminRoleBadge" class="hero-badge" style="font-size:11px; padding:3px 10px; margin:0;">일반 관리자</span>
+              <span id="adminRoleBadge" class="hero-badge" style="font-size:11px; padding:3px 10px; margin:0;">담당자</span>
             </div>
             <div style="font-size:12px; color:var(--color-pencil-gray);" id="adminRoleDescDisplay">
-              프로그램 및 참여자 출결 관리가 가능합니다.
+              프로그램 및 참여자 출석 관리가 가능합니다.
             </div>
           </div>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-sm" onclick="openChangePasswordModal()">🔑 암호 변경</button>
-          <button class="btn btn-sm btn-danger" onclick="logoutAdmin()">🚪 관리자 로그아웃</button>
+          <button class="btn btn-sm" id="accountPasswordButton" onclick="openChangePasswordModal()">비밀번호 변경</button>
+          <button class="btn btn-sm btn-danger" id="settingsLogoutButton" onclick="logoutAdmin()">로그아웃</button>
         </div>
       </div>
 
       <!-- Admin Sub Tabs -->
       <div class="admin-subtabs">
         <div class="admin-subtab-group">
-          <button class="admin-subtab-btn active" id="subtabBtnProgram" onclick="switchAdminTab('program')">1. 프로그램 & 회차 관리</button>
-          <button class="admin-subtab-btn" id="subtabBtnParticipants" onclick="switchAdminTab('participants')">2. 참여자 명단 (Excel 일괄)</button>
-          <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">3. 출석 현황 & 결석 처리</button>
-          <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">4. A4 출석부 생성 및 인쇄</button>
-          <button class="admin-subtab-btn" id="subtabBtnMaster" onclick="switchAdminTab('master')" style="display:none; background:#fef3c7; color:#92400e; border-color:#fcd34d;">👑 5. 마스터 설정 (기관·관리자)</button>
+          <button class="admin-subtab-btn active" id="subtabBtnProgram" onclick="switchAdminTab('program')">프로그램 관리</button>
+          <button class="admin-subtab-btn" id="subtabBtnParticipants" onclick="switchAdminTab('participants')">참여자 관리</button>
+          <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">출석 관리</button>
+          <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button>
+          <button class="admin-subtab-btn" id="subtabBtnMaster" onclick="switchAdminTab('master')" style="display:none; background:#fef3c7; color:#92400e; border-color:#fcd34d;">설정</button>
         </div>
       </div>
 
@@ -1065,8 +1077,7 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label">PROGRAM SETTINGS</span>
-              <h3 class="card-title">프로그램 신규 개설 및 세부 정보 수정</h3>
+              <h3 class="card-title">프로그램 관리</h3>
             </div>
             <button class="btn btn-sora btn-sm" onclick="openNewProgramModal()">+ 새 프로그램 등록</button>
           </div>
@@ -1074,7 +1085,7 @@
           <form id="programForm" onsubmit="saveCurrentProgram(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label>프로그램명 *</label>
+                <label for="progName">프로그램명 *</label>
                 <input type="text" id="progName" required placeholder="예: 시니어 스마트폰 기초교실">
               </div>
               <div class="form-group">
@@ -1085,7 +1096,7 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>총 회차수 *</label>
+                <label for="progTotalSessions">총 회차수 *</label>
                 <input type="number" id="progTotalSessions" min="1" max="50" value="8" required onchange="autoGenerateSessionsPreview()">
               </div>
               <div class="form-group">
@@ -1100,19 +1111,19 @@
                 </div>
               </div>
               <div class="form-group">
-                <label>운영 시간</label>
+                <label for="progTime">운영 시간</label>
                 <input type="text" id="progTime" placeholder="예: 10:00 ~ 12:00">
               </div>
               <div class="form-group">
-                <label>교육 장소</label>
+                <label for="progLocation">교육 장소</label>
                 <input type="text" id="progLocation" placeholder="예: 3층 정보화교육실">
               </div>
               <div class="form-group">
-                <label>담당자 (사회복지사)</label>
+                <label for="progManager">담당자 (사회복지사)</label>
                 <input type="text" id="progManager" placeholder="예: 이영희 사회복지사">
               </div>
               <div class="form-group">
-                <label>강사명</label>
+                <label for="progInstructor">강사명</label>
                 <input type="text" id="progInstructor" placeholder="예: 박진수 전문강사">
               </div>
             </div>
@@ -1151,12 +1162,11 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label">PARTICIPANTS</span>
-              <h3 class="card-title">참여자 명단 관리 (Excel / 개별 등록)</h3>
+              <h3 class="card-title">참여자 관리</h3>
             </div>
             <div style="display: flex; gap: 8px;">
-              <button class="btn btn-sm" onclick="downloadExcelTemplate()">Excel 양식 받기</button>
-              <button class="btn btn-sm btn-sora" onclick="openExcelUploadModal()">Excel/CSV 일괄 등록</button>
+              <button class="btn btn-sm" onclick="downloadExcelTemplate()">엑셀 양식 받기</button>
+              <button class="btn btn-sm btn-sora" onclick="openExcelUploadModal()">엑셀/CSV 일괄 등록</button>
               <button class="btn btn-sm btn-sora" onclick="openAddParticipantModal()">+ 개별 참여자 추가</button>
             </div>
           </div>
@@ -1171,7 +1181,7 @@
               <thead>
                 <tr>
                   <th style="width: 50px;">연번</th>
-                  <th>성명</th>
+                  <th>이름</th>
                   <th>회원번호</th>
                   <th>연락처</th>
                   <th>비고</th>
@@ -1193,8 +1203,7 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label">ATTENDANCE MANAGEMENT</span>
-              <h3 class="card-title" id="adminAttendanceTitle">당일 회차 출석 현황 및 대리 출결 관리</h3>
+              <h3 class="card-title" id="adminAttendanceTitle">당일 회차 출석 현황 및 대리 출석 관리</h3>
             </div>
             <div style="font-size: 13px; color: var(--color-pencil-gray); font-weight: 600;">
               * 담당자가 참여자의 서명을 돕거나 결석 처리를 관리할 수 있습니다.
@@ -1225,10 +1234,10 @@
               <thead>
                 <tr>
                   <th style="width: 50px;">번호</th>
-                  <th>성명</th>
+                  <th>이름</th>
                   <th>회원번호</th>
                   <th>연락처</th>
-                  <th>출결 상태</th>
+                  <th>출석 상태</th>
                   <th>전자서명 확인</th>
                   <th style="width: 220px; text-align: center;">관리 / 서명 지원</th>
                 </tr>
@@ -1246,8 +1255,7 @@
         <div class="print-controls">
           <div class="card-header" style="margin-bottom: 14px; padding-bottom: 8px;">
             <div>
-              <span class="bar-label">PRINT & PDF EXPORT</span>
-              <h3 class="card-title">A4 규격 출석부 생성 및 인쇄 설정</h3>
+              <h3 class="card-title">인쇄</h3>
             </div>
             <button class="btn btn-sora btn-lg" onclick="triggerPrint()">🖨️ A4 출석부 바로 인쇄 / PDF 저장</button>
           </div>
@@ -1255,11 +1263,11 @@
           <div class="print-options-bar">
             <!-- Scope selection -->
             <div style="display:flex; align-items:center; gap: 10px;">
-              <label style="font-size:13px; font-weight:800;">출력 범위:</label>
+              <label style="font-size:13px; font-weight:800;">인쇄 범위:</label>
               <select id="printScopeType" onchange="onPrintScopeChange()">
                 <option value="all">전체 회차</option>
                 <option value="month">특정 월 선택</option>
-                <option value="custom">회차 범위 지정 (예: 1~6회기)</option>
+                <option value="custom">회차 범위 지정 (예: 1~6회차)</option>
               </select>
 
               <select id="printMonthSelect" style="display:none;" onchange="renderA4PrintPages()">
@@ -1268,15 +1276,15 @@
 
               <div id="printCustomRangeWrap" style="display:none; align-items:center; gap: 6px;">
                 <input type="number" id="printFromSession" min="1" value="1" style="width: 65px;" onchange="renderA4PrintPages()">
-                <span style="font-weight:700;">회기 ~</span>
+                <span style="font-weight:700;">회차 ~</span>
                 <input type="number" id="printToSession" min="1" value="6" style="width: 65px;" onchange="renderA4PrintPages()">
-                <span style="font-weight:700;">회기</span>
+                <span style="font-weight:700;">회차</span>
               </div>
             </div>
 
             <!-- Column Display Toggles -->
             <div class="checkbox-group">
-              <span style="font-size:13px; font-weight:800;">출력 항목 선택:</span>
+              <span style="font-size:13px; font-weight:800;">인쇄 항목 선택:</span>
               <label class="checkbox-label">
                 <input type="checkbox" id="chkPrintPhone" checked onchange="renderA4PrintPages()"> 연락처
               </label>
@@ -1307,45 +1315,17 @@
         </div>
       </div>
 
-      <!-- SUBTAB 5: MASTER MANAGEMENT (마스터 관리자 전용: 기관 및 일반 관리자 관리) -->
+      <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
-        
-        <!-- 1. 기관 정보 설정 카드 -->
-        <div class="card" style="margin-bottom: 24px;">
-          <div class="card-header">
-            <div>
-              <span class="bar-label" style="background:#fef3c7; color:#92400e;">MASTER AUTHORITY</span>
-              <h3 class="card-title">🏛️ 소속 기관 정보 및 1차 보안 코드 관리</h3>
-            </div>
-          </div>
-          <form onsubmit="saveMasterOrgSettings(event)">
-            <div class="form-grid">
-              <div class="form-group">
-                <label>소속 기관명 *</label>
-                <input type="text" id="masterOrgNameInput" placeholder="예: 행복노인복지관" required>
-              </div>
-              <div class="form-group">
-                <label>1차 접속 기관 보안 코드 (입장 비밀번호) *</label>
-                <input type="text" id="masterOrgCodeInput" placeholder="예: 2026" required style="letter-spacing: 1px;">
-                <small style="color:#64748b; font-size:12px; margin-top:4px; display:block;">
-                  * 링크 접속 시 입력하는 1차 보안 코드입니다.
-                </small>
-              </div>
-            </div>
-            <div style="display:flex; justify-content:flex-end; margin-top: 14px;">
-              <button type="submit" class="btn btn-sora">기관 정보 저장</button>
-            </div>
-          </form>
-        </div>
 
-        <!-- 2. 일반 관리자 계정 목록 및 등록/수정 카드 -->
+        <!-- 2. 담당자 계정 목록 및 등록/수정 카드 -->
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
             <div>
-              <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">ADMIN ACCOUNTS</span>
-              <h3 class="card-title">👤 일반 관리자 계정 목록 & 등록/수정</h3>
+              <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">설정</span>
+              <h3 class="card-title">담당자 계정 목록</h3>
             </div>
-            <button class="btn btn-sora btn-sm" onclick="openAdminAccountModal()">+ 새 관리자 등록</button>
+            <button class="btn btn-sora btn-sm" onclick="openAdminAccountModal()">+ 새 담당자 등록</button>
           </div>
 
           <div class="table-container">
@@ -1353,9 +1333,9 @@
               <thead>
                 <tr>
                   <th style="width: 60px;">번호</th>
-                  <th>관리자 아이디 (ID)</th>
-                  <th>담당자 이름</th>
-                  <th>비밀번호 (PW)</th>
+                  <th>아이디</th>
+                  <th>관리자 확인용 메모</th>
+                  <th>비밀번호</th>
                   <th>등록일시</th>
                   <th style="width: 140px; text-align: center;">관리</th>
                 </tr>
@@ -1367,27 +1347,35 @@
           </div>
         </div>
 
-        <!-- 3. 마스터 관리자 본인 계정 정보 변경 카드 -->
+        <!-- 3. 관리자 본인 계정 정보 변경 카드 -->
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label" style="background:#fee2e2; color:#991b1b;">MASTER SECURITY</span>
-              <h3 class="card-title">👑 마스터 관리자 본인 계정 정보 변경</h3>
+              <span class="bar-label" style="background:#fee2e2; color:#991b1b;">계정 변경</span>
+              <h3 class="card-title">관리자 계정 변경</h3>
             </div>
           </div>
           <form onsubmit="saveMasterAccountSettings(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label>마스터 아이디 (ID) *</label>
+                <label for="masterUsernameInput">아이디 *</label>
                 <input type="text" id="masterUsernameInput" required placeholder="예: master">
               </div>
               <div class="form-group">
-                <label>새 마스터 비밀번호 (PW) *</label>
-                <input type="password" id="masterPasswordInput" required placeholder="새 마스터 비밀번호 입력">
+                <label for="masterCurrentPasswordInput">현재 비밀번호 *</label>
+                <input type="password" id="masterCurrentPasswordInput" required autocomplete="current-password" placeholder="현재 비밀번호 입력">
+              </div>
+              <div class="form-group">
+                <label for="masterPasswordInput">새 비밀번호 *</label>
+                <input type="password" id="masterPasswordInput" required placeholder="새 비밀번호 입력" autocomplete="new-password">
+              </div>
+              <div class="form-group">
+                <label for="masterConfirmPasswordInput">새 비밀번호 확인 *</label>
+                <input type="password" id="masterConfirmPasswordInput" required autocomplete="new-password" placeholder="새 비밀번호 다시 입력">
               </div>
             </div>
             <div style="display:flex; justify-content:flex-end; margin-top: 14px;">
-              <button type="submit" class="btn btn-sora">마스터 계정 정보 저장</button>
+              <button type="submit" class="btn btn-sora">변경 사항 저장</button>
             </div>
           </form>
         </div>
@@ -1401,46 +1389,33 @@
        MODALS
        ==================================================================== -->
 
-  <!-- Modal 0: Admin Login Modal (마스터 관리자 / 일반 관리자 구분 로그인) -->
+  <!-- Modal 0: Admin Login Modal (관리자 / 담당자 구분 로그인) -->
   <div id="adminLoginModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 460px; text-align: center;">
       <div style="font-size: 46px; margin-bottom: 8px;">🛡️</div>
       <span class="hero-badge" id="adminLoginBadge">관리자 인증</span>
-      <h3 style="font-family: var(--font-family-display); font-size: 24px; font-weight: 900; margin: 10px 0 6px 0;">
+      <h3 id="loginTitle" style="font-family: var(--font-family-display); font-size: 24px; font-weight: 900; margin: 10px 0 6px 0;">
         관리자 모드 로그인
       </h3>
-      <p style="font-size: 14px; color: var(--color-pencil-gray); margin-bottom: 18px;">
+      <p id="loginDescription" style="font-size: 14px; color: var(--color-pencil-gray); margin-bottom: 18px;">
         원활한 운영 관리를 위해 관리자 계정으로 로그인해 주세요.
       </p>
-
-      <!-- Role Selector Tabs inside Modal -->
-      <div style="display: flex; gap: 8px; margin-bottom: 18px; background: #f1f5f9; padding: 5px; border-radius: 14px;">
-        <button type="button" id="loginTypeGeneralBtn" class="btn btn-sm" style="flex:1; font-weight:800; background:var(--color-sora); color:#fff; border-color:var(--color-sora-shadow);" onclick="selectLoginAdminType('general')">
-          👤 일반 관리자
-        </button>
-        <button type="button" id="loginTypeMasterBtn" class="btn btn-sm" style="flex:1; font-weight:800; background:#fff; color:#475569;" onclick="selectLoginAdminType('master')">
-          👑 마스터 관리자
-        </button>
-      </div>
 
       <form onsubmit="handleAdminLogin(event)">
         <input type="hidden" id="loginAdminRoleType" value="general">
 
         <div class="form-group" style="margin-bottom: 12px; text-align: left;">
-          <label>관리자 아이디 (ID)</label>
+          <label for="adminUsernameInput">아이디</label>
           <input type="text" id="adminUsernameInput" placeholder="아이디 입력 (예: admin)" required autofocus style="font-size: 16px;">
         </div>
 
         <div class="form-group" style="margin-bottom: 14px; text-align: left;">
-          <label>관리자 비밀번호 (PW)</label>
+          <label for="adminPasswordInput">비밀번호</label>
           <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" style="font-size: 16px; letter-spacing: 2px;" required>
-          <div id="adminLoginHint" style="font-size: 12px; color: var(--color-pencil-gray); margin-top: 6px; line-height: 1.4;">
-            * 일반 관리자 기본 계정: <strong>admin</strong> / <strong>1234</strong>
-          </div>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-          <button type="button" class="btn" onclick="closeAdminLoginModal()">취소 (키오스크로 이동)</button>
+          <button type="button" class="btn" onclick="closeAdminLoginModal()">취소</button>
           <button type="submit" class="btn btn-sora">로그인</button>
         </div>
       </form>
@@ -1451,35 +1426,23 @@
   <div id="changePasswordModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
-        <span class="bar-label">SECURITY SETTINGS</span>
-        <h3 class="modal-title">보안 비밀번호 및 기관 설정</h3>
+        <span class="bar-label">설정</span>
+        <h3 class="modal-title">비밀번호 변경</h3>
       </div>
       <form onsubmit="handleChangePassword(event)">
-        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
-          <div style="font-weight: 800; font-size: 13px; color: #0284c7; margin-bottom: 8px;">🏛️ 기관 보안 접속 설정</div>
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label>소속 기관명</label>
-            <input type="text" id="changeOrgNameInput" placeholder="예: OO노인복지관">
-          </div>
-          <div class="form-group">
-            <label>새 기관 보안 코드 (접속 즉시 요구되는 1차 암호)</label>
-            <input type="text" id="changeOrgCodeInput" placeholder="초기값: 2026" style="letter-spacing: 1px;">
-          </div>
-        </div>
-
         <div style="background: #fefce8; border: 1.5px solid #fef08a; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
-          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;">🔒 직원 (관리자) 비밀번호 변경</div>
+          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;">🔒 담당자 비밀번호 변경</div>
           <div class="form-group" style="margin-bottom: 10px;">
-            <label>현재 관리자 비밀번호 *</label>
+            <label for="currPwInput">현재 비밀번호 *</label>
             <input type="password" id="currPwInput" required placeholder="기본값: 1234">
           </div>
           <div class="form-group" style="margin-bottom: 10px;">
-            <label>새 관리자 비밀번호 *</label>
-            <input type="password" id="newPwInput" required placeholder="새 관리자 비밀번호">
+            <label for="newPwInput">새 비밀번호 *</label>
+            <input type="password" id="newPwInput" required placeholder="새 비밀번호">
           </div>
           <div class="form-group">
-            <label>새 관리자 비밀번호 확인 *</label>
-            <input type="password" id="newPwConfirmInput" required placeholder="새 관리자 비밀번호 다시 입력">
+            <label for="newPwConfirmInput">새 비밀번호 확인 *</label>
+            <input type="password" id="newPwConfirmInput" required placeholder="새 비밀번호 다시 입력">
           </div>
         </div>
 
@@ -1543,19 +1506,19 @@
       <form id="participantForm" onsubmit="saveParticipant(event)">
         <input type="hidden" id="partId">
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>성명 *</label>
+          <label for="partName">이름 *</label>
           <input type="text" id="partName" required placeholder="예: 홍길동">
         </div>
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>회원번호 (비회원인 경우 공란 가능)</label>
+          <label for="partMemberId">회원번호 (비회원인 경우 공란 가능)</label>
           <input type="text" id="partMemberId" placeholder="예: 2026-0142 (선택)">
         </div>
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>연락처</label>
+          <label for="partPhone">연락처</label>
           <input type="text" id="partPhone" placeholder="예: 010-1234-5678">
         </div>
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>비고</label>
+          <label for="partNote">비고</label>
           <input type="text" id="partNote" placeholder="특이사항 메모">
         </div>
         <div class="form-group" style="margin-bottom: 16px;">
@@ -1563,7 +1526,7 @@
             <input type="checkbox" id="partIsDropped" onchange="toggleDroppedSessionInput()"> 중도포기 여부
           </label>
           <div id="partDroppedSessionWrap" style="display:none; margin-top: 8px;">
-            <label style="font-size: 13px;">중도포기 시작 회기:</label>
+            <label style="font-size: 13px;">중도포기 시작 회차:</label>
             <input type="number" id="partDroppedSession" min="1" value="1" style="width: 80px;">
           </div>
         </div>
@@ -1575,15 +1538,15 @@
     </div>
   </div>
 
-  <!-- Modal 4: Excel Batch Upload Modal -->
+  <!-- Modal 4: 엑셀 Batch Upload Modal -->
   <div id="excelUploadModal" class="modal-overlay hidden">
     <div class="modal-content">
       <div class="modal-header">
         <span class="bar-label">EXCEL BATCH UPLOAD</span>
-        <h3 class="modal-title">Excel / CSV 파일로 참여자 일괄 등록</h3>
+        <h3 class="modal-title">엑셀 / CSV 파일로 참여자 일괄 등록</h3>
       </div>
       <p style="font-size: 14px; color: var(--color-pencil-gray); font-weight: 500; margin-bottom: 16px;">
-        열 헤더명: <strong>성명</strong>, <strong>연락처</strong>, <strong>회원번호</strong>, <strong>비고</strong> 가 포함된 엑셀(.xlsx, .xls) 또는 .csv 파일을 선택하세요.
+        열 헤더명: <strong>이름</strong>, <strong>연락처</strong>, <strong>회원번호</strong>, <strong>비고</strong> 가 포함된 엑셀(.xlsx, .xls) 또는 .csv 파일을 선택하세요.
       </p>
       <div style="border: 2px dashed var(--color-sora); border-radius: var(--radius-default); padding: 30px; text-align: center; margin-bottom: 16px; background: #fbfdff;">
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" style="display: block; margin: 0 auto;">
@@ -1607,19 +1570,19 @@
         <h3 class="modal-title">새 배움터 프로그램 만들기</h3>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>프로그램명 *</label>
+        <label for="newProgTitle">프로그램명 *</label>
         <input type="text" id="newProgTitle" placeholder="예: 시니어 스마트폰 기초과정" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>시작일자 *</label>
+        <label for="newProgStart">시작일자 *</label>
         <input type="date" id="newProgStart" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>종료일자 *</label>
+        <label for="newProgEnd">종료일자 *</label>
         <input type="date" id="newProgEnd" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>총 회차수</label>
+        <label for="newProgCount">총 회차수</label>
         <input type="number" id="newProgCount" value="8" min="1" max="50">
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px;">
@@ -1642,13 +1605,13 @@
       </p>
 
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>Supabase Project URL *</label>
+        <label for="supabaseUrlInput">Supabase Project URL *</label>
         <input type="text" id="supabaseUrlInput" placeholder="https://your-project.supabase.co" autocomplete="off">
         <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Supabase 대시보드 > Project Settings > API > Project URL</small>
       </div>
 
       <div class="form-group" style="margin-bottom: 14px;">
-        <label>Supabase Anon (Public) Key *</label>
+        <label for="supabaseKeyInput">Supabase Anon (Public) Key *</label>
         <textarea id="supabaseKeyInput" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family:monospace; font-size:12px;"></textarea>
         <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Project Settings > API > Project API keys > `anon` `public` 키</small>
       </div>
@@ -1674,28 +1637,28 @@
     </div>
   </div>
 
-  <!-- Modal 7: Add / Edit General Admin Account Modal (마스터 전용 계정 등록/수정) -->
+  <!-- Modal 7: Add / Edit General Admin Account Modal (관리자 전용 계정 등록/수정) -->
   <div id="adminAccountModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 440px;">
       <div class="modal-header">
-        <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">ADMIN ACCOUNT</span>
-        <h3 class="modal-title" id="adminAccountModalTitle">일반 관리자 계정 등록</h3>
+        <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">담당자</span>
+        <h3 class="modal-title" id="adminAccountModalTitle">담당자 계정 등록</h3>
       </div>
       <form onsubmit="saveAdminAccount(event)">
         <input type="hidden" id="editAdminIndex" value="-1">
-        
+
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>관리자 아이디 (ID) *</label>
+          <label for="accUsernameInput">아이디 *</label>
           <input type="text" id="accUsernameInput" required placeholder="예: admin1, manager">
         </div>
 
         <div class="form-group" style="margin-bottom: 12px;">
-          <label>담당자 성명 *</label>
-          <input type="text" id="accNameInput" required placeholder="예: 김담당, 이복지사">
+          <label for="accNameInput">관리자 확인용 메모</label>
+          <textarea id="accNameInput" rows="3" placeholder="예: 오전 미술 프로그램 담당"></textarea><small>이 메모는 관리자만 확인합니다.</small>
         </div>
 
         <div class="form-group" style="margin-bottom: 16px;">
-          <label>비밀번호 (PW) *</label>
+          <label for="accPasswordInput">비밀번호 *</label>
           <input type="password" id="accPasswordInput" required placeholder="비밀번호 입력">
         </div>
 
@@ -1721,8 +1684,8 @@
 
     // Default Security Passwords & Admin Accounts
     const DEFAULT_ORG_NAME = '행복복지관';
-    const DEFAULT_ORG_SECURITY_CODE = '2026'; // 접속 즉시 기관 보안 로그인 암호
-    const DEFAULT_ADMIN_PASSWORD = '1234';    // 기본 직원 (관리자) 암호
+    const DEFAULT_ORG_SECURITY_CODE = '2026'; // 접속 즉시 기관 보안 로그인 비밀번호
+    const DEFAULT_ADMIN_PASSWORD = '1234';    // 기본 담당자 비밀번호
 
     const DEFAULT_MASTER_ACCOUNT = {
       username: 'master',
@@ -1730,7 +1693,7 @@
     };
 
     const DEFAULT_GENERAL_ADMINS = [
-      { id: 'adm_001', username: 'admin', name: '기본 관리자', password: '1234', createdAt: '2026-10-12' }
+      { id: 'adm_001', username: 'admin', memo: '기본 담당자', password: '1234', createdAt: '2026-10-12' }
     ];
 
     const DEFAULT_DATA = {
@@ -1761,7 +1724,7 @@
             { id: "sess_005", round: 4, date: "2026-08-21", isHoliday: false, note: "지도 및 길찾기 앱" },
             { id: "sess_006", round: 5, date: "2026-08-28", isHoliday: false, note: "유튜브 검색 및 구독" },
             { id: "sess_007", round: 6, date: "2026-09-04", isHoliday: false, note: "버스 및 지하철 앱" },
-            { id: "sess_008", round: 7, date: "2026-09-11", isHoliday: false, note: "키오스크 실습" },
+            { id: "sess_008", round: 7, date: "2026-09-11", isHoliday: false, note: "참여자 출석 실습" },
             { id: "sess_009", round: 8, date: "2026-09-18", isHoliday: false, note: "종강식 및 수료" }
           ],
           participants: [
@@ -1830,7 +1793,7 @@
     })();
 
     let appData = null;
-    let currentRole = 'kiosk'; // 'kiosk' | 'admin'
+    let currentRole = 'entry'; // 'kiosk' | 'admin'
     let isAdminLoggedIn = false; // session login state
     let currentAdminRole = 'general'; // 'master' | 'general'
     let currentAdminUser = null; // logged-in admin user info
@@ -1895,7 +1858,7 @@
 
       try {
         supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
-        
+
         // 연결 테스트: attendance_data 테이블 조회
         const { data, error } = await supabaseClient
           .from(SUPABASE_TABLE_NAME)
@@ -2133,9 +2096,9 @@
     function renderCurrentView() {
       populateGlobalSelectors();
       if (currentRole === 'kiosk') {
-        renderKioskView();
+        renderKioskGrid();
       } else if (currentRole === 'admin') {
-        switchAdminSubtab(currentAdminTab);
+        switchAdminTab(currentAdminTab);
       }
     }
 
@@ -2145,7 +2108,7 @@
         saveData();
         isAdminLoggedIn = false;
         initApp();
-        showToast('초기 샘플 데이터로 복원되었습니다. (암호: 1234)');
+        showToast('초기 샘플 데이터로 복원되었습니다. (비밀번호: 1234)');
       }
     }
 
@@ -2200,213 +2163,116 @@
         orgTitle.textContent = `${currentOrgName} 전자출석부`;
       }
       if (orgSub) {
-        orgSub.textContent = `Senior Attendance System · ${currentOrgName} 배움터`;
+        orgSub.textContent = '이름을 선택하고 서명하는 출석부';
       }
     }
 
-    function updateOrgBrandDisplay() {
-      const orgTitle = document.getElementById('headerOrgTitleDisplay');
-      const orgSub = document.getElementById('headerOrgSubDisplay');
-      const currentOrgName = (appData && appData.orgName) ? appData.orgName : DEFAULT_ORG_NAME;
+    let attendanceAccess = false;
+    let loginDestination = 'attendance';
 
-      if (orgTitle) {
-        orgTitle.textContent = `${currentOrgName} 전자출석부`;
-      }
-      if (orgSub) {
-        orgSub.textContent = `Senior Attendance System · ${currentOrgName} 배움터`;
-      }
+    function clearManagementLogin() {
+      isAdminLoggedIn = false;
+      currentAdminUser = null;
+      currentAdminRole = 'general';
+      ['adminAccountModal', 'changePasswordModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+    }
+
+    function showEntryScreen() {
+      attendanceAccess = false;
+      clearManagementLogin();
+      currentRole = 'entry';
+      document.getElementById('entryView').classList.add('active');
+      document.querySelectorAll('.view-panel:not(#entryView)').forEach(panel => panel.classList.remove('active'));
+      document.getElementById('roleNavigation').classList.add('hidden');
+      document.getElementById('programNavigation').classList.add('hidden');
+      document.getElementById('headerTools').classList.add('hidden');
     }
 
     function switchRole(role) {
+      if (role === 'kiosk' && !attendanceAccess) return showEntryScreen();
+      if (role === 'admin' && !isAdminLoggedIn) return tryEnterAdminMode();
+      if (role === 'kiosk') clearManagementLogin();
       currentRole = role;
+      document.getElementById('roleNavigation').classList.toggle('hidden', currentAdminRole === 'master');
+      document.getElementById('programNavigation').classList.toggle('hidden', currentAdminRole === 'master');
+      document.getElementById('headerTools').classList.toggle('hidden', !isAdminLoggedIn);
       document.getElementById('tabKioskBtn').classList.toggle('active', role === 'kiosk');
       document.getElementById('tabAdminBtn').classList.toggle('active', role === 'admin');
-
       document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
-      if (role === 'kiosk') {
-        document.getElementById('kioskView').classList.add('active');
-        renderKioskGrid();
-      } else if (role === 'admin') {
-        document.getElementById('adminView').classList.add('active');
-        updateAdminRoleUI();
-        renderAdminView();
-      }
+      document.getElementById(role === 'kiosk' ? 'kioskView' : 'adminView').classList.add('active');
+      if (role === 'kiosk') renderKioskGrid();
+      else { updateAdminRoleUI(); switchAdminTab(currentAdminRole === 'master' ? 'master' : 'program'); }
     }
 
     function tryEnterAdminMode() {
-      if (isAdminLoggedIn) {
-        switchRole('admin');
-      } else {
-        openAdminLoginModal();
-      }
+      openAdminLoginModal('general', 'management');
     }
 
     /* ==========================================================================
        4. ADMIN AUTHENTICATION: MASTER ADMIN & GENERAL ADMIN
        ========================================================================== */
     function selectLoginAdminType(type) {
-      const roleInput = document.getElementById('loginAdminRoleType');
-      const genBtn = document.getElementById('loginTypeGeneralBtn');
-      const masBtn = document.getElementById('loginTypeMasterBtn');
-      const hint = document.getElementById('adminLoginHint');
-      const userInput = document.getElementById('adminUsernameInput');
-      const badge = document.getElementById('adminLoginBadge');
-
-      roleInput.value = type;
-
-      if (type === 'master') {
-        genBtn.style.background = '#fff';
-        genBtn.style.color = '#475569';
-        genBtn.style.borderColor = '#cbd5e1';
-
-        masBtn.style.background = '#f59e0b';
-        masBtn.style.color = '#fff';
-        masBtn.style.borderColor = '#d97706';
-
-        badge.textContent = '👑 마스터 관리자 인증';
-        badge.style.background = '#fef3c7';
-        badge.style.color = '#92400e';
-
-        hint.innerHTML = '* 마스터 관리자 기본 계정: <strong>master</strong> / <strong>master1234</strong>';
-        if (!userInput.value || userInput.value === 'admin') {
-          userInput.value = 'master';
-        }
-      } else {
-        masBtn.style.background = '#fff';
-        masBtn.style.color = '#475569';
-        masBtn.style.borderColor = '#cbd5e1';
-
-        genBtn.style.background = 'var(--color-sora)';
-        genBtn.style.color = '#fff';
-        genBtn.style.borderColor = 'var(--color-sora-shadow)';
-
-        badge.textContent = '👤 일반 관리자 인증';
-        badge.style.background = 'var(--color-sora-light)';
-        badge.style.color = 'var(--color-sora-deep)';
-
-        hint.innerHTML = '* 일반 관리자 기본 계정: <strong>admin</strong> / <strong>1234</strong>';
-        if (!userInput.value || userInput.value === 'master') {
-          userInput.value = 'admin';
-        }
-      }
+      document.getElementById('loginAdminRoleType').value = type;
+      const label = type === 'master' ? '관리자' : '담당자';
+      document.getElementById('adminLoginBadge').textContent = label + ' 인증';
+      document.getElementById('loginTitle').textContent = label + ' 인증';
+      document.getElementById('loginDescription').textContent = '아이디와 비밀번호를 입력해 주세요.';
+      document.getElementById('adminUsernameInput').value = '';
       document.getElementById('adminPasswordInput').value = '';
-      document.getElementById('adminPasswordInput').focus();
     }
 
-    function openAdminLoginModal() {
-      selectLoginAdminType('general'); // 기본은 일반 관리자 선택
-      document.getElementById('adminPasswordInput').value = '';
+    function openAdminLoginModal(type = 'general', destination = 'attendance') {
+      loginDestination = destination;
+      selectLoginAdminType(type);
       document.getElementById('adminLoginModal').classList.remove('hidden');
-      setTimeout(() => {
-        document.getElementById('adminPasswordInput').focus();
-      }, 150);
+      document.getElementById('adminUsernameInput').focus();
     }
 
     function closeAdminLoginModal() {
       document.getElementById('adminLoginModal').classList.add('hidden');
-      if (!isAdminLoggedIn) {
-        switchRole('kiosk');
-      }
     }
 
     function handleAdminLogin(event) {
       event.preventDefault();
-      const loginType = document.getElementById('loginAdminRoleType').value;
-      const inputUser = document.getElementById('adminUsernameInput').value.trim();
-      const inputPw = document.getElementById('adminPasswordInput').value;
-
-      if (loginType === 'master') {
-        const master = appData.masterAccount || DEFAULT_MASTER_ACCOUNT;
-        if (inputUser === master.username && inputPw === master.password) {
-          isAdminLoggedIn = true;
-          currentAdminRole = 'master';
-          currentAdminUser = { username: master.username, name: '마스터 관리자' };
-          closeAdminLoginModal();
-          switchRole('admin');
-          switchAdminTab('program');
-          showToast('👑 마스터 관리자로 인증되었습니다. (기관 및 관리자 제어 권한 부여)');
-          return;
-        } else {
-          alert('마스터 관리자 아이디 또는 비밀번호가 일치하지 않습니다.\n(기본 계정: master / master1234)');
-          document.getElementById('adminPasswordInput').focus();
-          return;
-        }
-      } else {
-        // 일반 관리자 검증
-        const admins = appData.generalAdmins || DEFAULT_GENERAL_ADMINS;
-        const matched = admins.find(a => a.username === inputUser && a.password === inputPw);
-
-        // 구버전 단일 비밀번호(adminPassword) 호환 체크
-        const legacyPw = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
-        const legacyMatch = (inputUser === 'admin' && inputPw === legacyPw);
-
-        if (matched || legacyMatch) {
-          isAdminLoggedIn = true;
-          currentAdminRole = 'general';
-          currentAdminUser = matched || { username: 'admin', name: '일반 관리자' };
-          closeAdminLoginModal();
-          switchRole('admin');
-          switchAdminTab('program');
-          showToast(`👤 일반 관리자(${currentAdminUser.name || currentAdminUser.username})로 로그인되었습니다.`);
-          return;
-        } else {
-          alert('일반 관리자 아이디 또는 비밀번호가 일치하지 않습니다.\n(기본 계정: admin / 1234)');
-          document.getElementById('adminPasswordInput').focus();
-          return;
-        }
+      const type = document.getElementById('loginAdminRoleType').value;
+      const username = document.getElementById('adminUsernameInput').value.trim();
+      const password = document.getElementById('adminPasswordInput').value;
+      const account = type === 'master' ? appData.masterAccount : (appData.generalAdmins || []).find(a => a.username === username);
+      if (!account || account.username !== username || account.password !== password) {
+        alert('아이디 또는 비밀번호가 맞지 않습니다. 다시 입력해 주세요.');
+        return;
       }
+      closeAdminLoginModal();
+      currentAdminRole = type;
+      currentAdminUser = account;
+      isAdminLoggedIn = true;
+      if (type === 'master') switchRole('admin');
+      else {
+        attendanceAccess = true;
+        switchRole(loginDestination === 'management' ? 'admin' : 'kiosk');
+      }
+      showToast(type === 'master' ? '관리자 인증을 완료했습니다.' : '담당자 인증을 완료했습니다.');
     }
 
     function updateAdminRoleUI() {
-      const roleIcon = document.getElementById('adminRoleIcon');
-      const roleName = document.getElementById('adminRoleNameDisplay');
-      const roleBadge = document.getElementById('adminRoleBadge');
-      const roleDesc = document.getElementById('adminRoleDescDisplay');
-      const masterTabBtn = document.getElementById('subtabBtnMaster');
-
-      if (currentAdminRole === 'master') {
-        if (roleIcon) roleIcon.textContent = '👑';
-        if (roleName) roleName.textContent = '마스터 관리자 인증됨';
-        if (roleBadge) {
-          roleBadge.textContent = '최고 관리자 (Master)';
-          roleBadge.style.background = '#fef3c7';
-          roleBadge.style.color = '#92400e';
-        }
-        if (roleDesc) roleDesc.textContent = '소속 기관 정보, 일반 관리자 계정 등록/수정 및 모든 시스템 제어가 가능합니다.';
-        if (masterTabBtn) masterTabBtn.style.display = 'inline-block';
-      } else {
-        if (roleIcon) roleIcon.textContent = '👤';
-        const uName = (currentAdminUser && currentAdminUser.name) ? currentAdminUser.name : '일반 관리자';
-        if (roleName) roleName.textContent = `${uName} 접속 중`;
-        if (roleBadge) {
-          roleBadge.textContent = '일반 관리자 (Admin)';
-          roleBadge.style.background = 'var(--color-sora-light)';
-          roleBadge.style.color = 'var(--color-sora-deep)';
-        }
-        if (roleDesc) roleDesc.textContent = '프로그램 운영, 참여자 관리 및 출석부 인쇄 업무를 수행할 수 있습니다.';
-        if (masterTabBtn) masterTabBtn.style.display = 'none';
-
-        // 혹시 마스터 탭에 머물러 있었다면 프로그램 탭으로 이동
-        if (currentAdminTab === 'master') {
-          switchAdminTab('program');
-        }
-      }
+      const master = currentAdminRole === 'master';
+      document.getElementById('adminRoleIcon').textContent = master ? '🔒' : '👤';
+      document.getElementById('adminRoleNameDisplay').textContent = master ? '관리자' : '담당자';
+      document.getElementById('adminRoleBadge').textContent = currentAdminUser?.username || '';
+      document.getElementById('adminRoleDescDisplay').textContent = master ? '담당자 계정을 등록하고 관리해 주세요.' : '프로그램, 참여자, 출석을 관리하고 출석부를 인쇄해 주세요.';
+      document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.style.display = (btn.id === 'subtabBtnMaster') === master ? 'inline-block' : 'none');
+      document.getElementById('accountPasswordButton').classList.toggle('hidden', master);
+      document.getElementById('settingsLogoutButton').classList.toggle('hidden', !master);
     }
 
     function logoutAdmin() {
-      isAdminLoggedIn = false;
-      currentAdminRole = 'general';
-      currentAdminUser = null;
-      switchRole('kiosk');
-      showToast('관리자 로그아웃 되었습니다.');
+      showEntryScreen();
+      showToast('로그아웃했습니다.');
     }
 
     function openChangePasswordModal() {
-      document.getElementById('changeOrgNameInput').value = appData.orgName || DEFAULT_ORG_NAME;
-      document.getElementById('changeOrgCodeInput').value = appData.orgSecurityCode || DEFAULT_ORG_SECURITY_CODE;
-      document.getElementById('currPwInput').value = '';
-      document.getElementById('newPwInput').value = '';
-      document.getElementById('newPwConfirmInput').value = '';
+      if (!isAdminLoggedIn) return;
+      ['currPwInput', 'newPwInput', 'newPwConfirmInput'].forEach(id => document.getElementById(id).value = '');
       document.getElementById('changePasswordModal').classList.remove('hidden');
     }
 
@@ -2416,49 +2282,23 @@
 
     function handleChangePassword(event) {
       event.preventDefault();
-      const newOrgName = document.getElementById('changeOrgNameInput').value.trim();
-      const newOrgCode = document.getElementById('changeOrgCodeInput').value.trim();
-      const curr = document.getElementById('currPwInput').value;
-      const newPw = document.getElementById('newPwInput').value;
-      const confirmPw = document.getElementById('newPwConfirmInput').value;
-      const actualCurr = (currentAdminRole === 'master' && appData.masterAccount)
-        ? appData.masterAccount.password
-        : (currentAdminUser ? currentAdminUser.password : (appData.adminPassword || DEFAULT_ADMIN_PASSWORD));
-
-      if (curr !== actualCurr) {
-        alert('현재 관리자 비밀번호가 일치하지 않습니다.');
-        return;
-      }
-      if (newPw && newPw !== confirmPw) {
-        alert('새 관리자 비밀번호 확인이 일치하지 않습니다.');
-        return;
-      }
-
-      if (newOrgName) {
-        appData.orgName = newOrgName;
-      }
-      if (newOrgCode) {
-        appData.orgSecurityCode = newOrgCode;
-      }
-      if (newPw) {
-        if (currentAdminRole === 'master') {
-          if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
-          appData.masterAccount.password = newPw;
-        } else if (currentAdminUser) {
-          currentAdminUser.password = newPw;
-          const idx = (appData.generalAdmins || []).findIndex(a => a.id === currentAdminUser.id);
-          if (idx !== -1) appData.generalAdmins[idx].password = newPw;
-        }
-        appData.adminPassword = newPw;
-      }
-
+      if (!isAdminLoggedIn || !currentAdminUser) return;
+      const current = document.getElementById('currPwInput').value;
+      const password = document.getElementById('newPwInput').value;
+      const confirmation = document.getElementById('newPwConfirmInput').value;
+      const account = (appData.generalAdmins || []).find(a => a.id === currentAdminUser.id);
+      if (!account || account.password !== current) return alert('현재 비밀번호가 맞지 않습니다.');
+      if (!password.trim() || password !== confirmation) return alert('새 비밀번호와 확인란을 똑같이 입력해 주세요.');
+      account.password = password;
+      currentAdminUser = account;
       saveData();
-      updateOrgBrandDisplay();
       closeChangePasswordModal();
-      showToast('보안 설정 및 비밀번호가 안전하게 변경되었습니다.');
+      showToast('비밀번호를 변경했습니다.');
     }
 
     function switchAdminTab(subtab) {
+      if (!isAdminLoggedIn) return;
+      if ((currentAdminRole === 'master') !== (subtab === 'master')) return;
       currentAdminTab = subtab;
       document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.classList.remove('active'));
       const activeBtn = Array.from(document.querySelectorAll('.admin-subtab-btn')).find(b => b.getAttribute('onclick')?.includes(subtab));
@@ -2468,7 +2308,7 @@
       document.getElementById('adminParticipantsSubtab').style.display = (subtab === 'participants') ? 'block' : 'none';
       document.getElementById('adminAttendanceSubtab').style.display = (subtab === 'attendance') ? 'block' : 'none';
       document.getElementById('adminPrintSubtab').style.display = (subtab === 'print') ? 'block' : 'none';
-      
+
       const masterSubtab = document.getElementById('adminMasterSubtab');
       if (masterSubtab) {
         masterSubtab.style.display = (subtab === 'master') ? 'block' : 'none';
@@ -2482,29 +2322,12 @@
     }
 
     /* ==========================================================================
-       4-1. MASTER MANAGEMENT SUBTAB LOGIC (기관 & 일반 관리자 등록/수정)
+       4-1. MASTER MANAGEMENT SUBTAB LOGIC (기관 & 담당자 등록/수정)
        ========================================================================== */
     function renderAdminMasterSubtab() {
-      if (currentAdminRole !== 'master') {
-        alert('마스터 관리자만 접근 가능한 화면입니다.');
-        switchAdminTab('program');
-        return;
-      }
-
-      // 1. 소속 기관 정보 폼 채우기
-      const orgNameInput = document.getElementById('masterOrgNameInput');
-      const orgCodeInput = document.getElementById('masterOrgCodeInput');
-      if (orgNameInput) orgNameInput.value = appData.orgName || DEFAULT_ORG_NAME;
-      if (orgCodeInput) orgCodeInput.value = appData.orgSecurityCode || DEFAULT_ORG_SECURITY_CODE;
-
-      // 2. 마스터 계정 본인 폼 채우기
-      const mUser = appData.masterAccount || DEFAULT_MASTER_ACCOUNT;
-      const mUserInput = document.getElementById('masterUsernameInput');
-      const mPwInput = document.getElementById('masterPasswordInput');
-      if (mUserInput) mUserInput.value = mUser.username;
-      if (mPwInput) mPwInput.value = mUser.password;
-
-      // 3. 일반 관리자 목록 테이블 렌더링
+      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
+      document.getElementById('masterUsernameInput').value = appData.masterAccount.username;
+      ['masterCurrentPasswordInput', 'masterPasswordInput', 'masterConfirmPasswordInput'].forEach(id => document.getElementById(id).value = '');
       renderAdminAccountsTable();
     }
 
@@ -2528,7 +2351,7 @@
         tbody.innerHTML = `
           <tr>
             <td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">
-              등록된 일반 관리자 계정이 없습니다. 상단의 [+ 새 관리자 등록] 버튼을 눌러 계정을 생성해 주세요.
+              등록된 담당자 계정이 없습니다. 상단의 [+ 새 담당자 등록] 버튼을 눌러 계정을 생성해 주세요.
             </td>
           </tr>
         `;
@@ -2540,13 +2363,13 @@
         tr.innerHTML = `
           <td style="text-align:center; font-weight:800; color:#64748b;">${idx + 1}</td>
           <td><strong>${escapeHtml(adm.username)}</strong></td>
-          <td>${escapeHtml(adm.name || '-')}</td>
+          <td>${escapeHtml(adm.memo ?? adm.name ?? '-')}</td>
           <td>
             <span style="font-family:monospace; background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:700;">
-              ${escapeHtml(adm.password)}
+              ••••••••
             </span>
           </td>
-          <td style="font-size:12px; color:#64748b;">${adm.createdAt || '-'}</td>
+          <td style="font-size:12px; color:#64748b;">${escapeHtml(adm.createdAt) || '-'}</td>
           <td style="text-align:center;">
             <div style="display:flex; justify-content:center; gap:6px;">
               <button class="btn btn-sm" onclick="openAdminAccountModal(${idx})">수정</button>
@@ -2558,28 +2381,8 @@
       });
     }
 
-    function saveMasterOrgSettings(e) {
-      if (e) e.preventDefault();
-      const name = document.getElementById('masterOrgNameInput').value.trim();
-      const code = document.getElementById('masterOrgCodeInput').value.trim();
-
-      if (!name || !code) {
-        alert('기관명과 1차 접속 기관 보안 코드를 모두 입력해 주세요.');
-        return;
-      }
-
-      appData.orgName = name;
-      appData.orgSecurityCode = code;
-      saveData();
-      updateOrgBrandDisplay();
-      
-      const firstInput = document.getElementById('orgNameInput');
-      if (firstInput) firstInput.value = name;
-
-      showToast(`🏛️ 소속 기관 정보 및 1차 보안 코드가 성공적으로 저장되었습니다.`);
-    }
-
     function openAdminAccountModal(index = -1) {
+      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
       const modal = document.getElementById('adminAccountModal');
       const title = document.getElementById('adminAccountModalTitle');
       const submitBtn = document.getElementById('adminAccountSubmitBtn');
@@ -2589,13 +2392,13 @@
 
       if (index >= 0) {
         const adm = appData.generalAdmins[index];
-        title.textContent = '일반 관리자 계정 수정';
+        title.textContent = '담당자 계정 수정';
         submitBtn.textContent = '수정 완료';
         document.getElementById('accUsernameInput').value = adm.username;
-        document.getElementById('accNameInput').value = adm.name || '';
+        document.getElementById('accNameInput').value = adm.memo ?? adm.name ?? '';
         document.getElementById('accPasswordInput').value = adm.password;
       } else {
-        title.textContent = '새 일반 관리자 계정 등록';
+        title.textContent = '새 담당자 계정 등록';
         submitBtn.textContent = '계정 등록';
         document.getElementById('accUsernameInput').value = '';
         document.getElementById('accNameInput').value = '';
@@ -2613,48 +2416,49 @@
     }
 
     function saveAdminAccount(e) {
+      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
       if (e) e.preventDefault();
       const index = parseInt(document.getElementById('editAdminIndex').value, 10);
       const username = document.getElementById('accUsernameInput').value.trim();
       const name = document.getElementById('accNameInput').value.trim();
-      const password = document.getElementById('accPasswordInput').value.trim();
+      const password = document.getElementById('accPasswordInput').value;
 
-      if (!username || !password) {
+      if (!username || !password.trim()) {
         alert('아이디와 비밀번호를 모두 입력해 주세요.');
         return;
       }
 
       if (!appData.generalAdmins) appData.generalAdmins = [];
 
-      // 아이디 중복 검사 (마스터 아이디 및 다른 일반 관리자)
+      // 아이디 중복 검사 (관리자 아이디 및 다른 담당자)
       if (username === (appData.masterAccount?.username || 'master')) {
-        alert('마스터 관리자 아이디와 동일한 아이디는 사용할 수 없습니다.');
+        alert('관리자 아이디와 동일한 아이디는 사용할 수 없습니다.');
         return;
       }
 
       const dupIdx = appData.generalAdmins.findIndex(a => a.username === username);
       if (dupIdx !== -1 && dupIdx !== index) {
-        alert('이미 사용 중인 일반 관리자 아이디입니다. 다른 아이디를 입력해 주세요.');
+        alert('이미 사용 중인 담당자 아이디입니다. 다른 아이디를 입력해 주세요.');
         return;
       }
 
       if (index >= 0 && index < appData.generalAdmins.length) {
         // 기존 계정 수정
         appData.generalAdmins[index].username = username;
-        appData.generalAdmins[index].name = name;
+        appData.generalAdmins[index].memo = name;
         appData.generalAdmins[index].password = password;
-        showToast(`👤 관리자 계정(${username}) 정보가 수정되었습니다.`);
+        showToast('담당자 계정을 수정했습니다.');
       } else {
         // 신규 계정 추가
         const newAdmin = {
           id: 'adm_' + Date.now(),
           username: username,
-          name: name,
+          memo: name,
           password: password,
           createdAt: new Date().toISOString().slice(0, 10)
         };
         appData.generalAdmins.push(newAdmin);
-        showToast(`👤 새 관리자 계정(${username})이 등록되었습니다.`);
+        showToast('담당자 계정을 등록했습니다.');
       }
 
       saveData();
@@ -2663,33 +2467,34 @@
     }
 
     function deleteAdminAccount(index) {
+      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
       if (index < 0 || index >= appData.generalAdmins.length) return;
       const target = appData.generalAdmins[index];
 
-      if (confirm(`관리자 계정 [${target.username} (${target.name || ''})]을(를) 삭제하시겠습니까?`)) {
+      if (confirm(`담당자 계정 [${target.username}]을(를) 삭제하시겠습니까?`)) {
         appData.generalAdmins.splice(index, 1);
         saveData();
         renderAdminAccountsTable();
-        showToast(`관리자 계정이 삭제되었습니다.`);
+        showToast('담당자 계정을 삭제했습니다.');
       }
     }
 
     function saveMasterAccountSettings(e) {
-      if (e) e.preventDefault();
-      const newUsername = document.getElementById('masterUsernameInput').value.trim();
-      const newPassword = document.getElementById('masterPasswordInput').value.trim();
-
-      if (!newUsername || !newPassword) {
-        alert('마스터 아이디와 비밀번호를 모두 입력해 주세요.');
-        return;
-      }
-
-      if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
-      appData.masterAccount.username = newUsername;
-      appData.masterAccount.password = newPassword;
-
+      e.preventDefault();
+      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
+      const username = document.getElementById('masterUsernameInput').value.trim();
+      const current = document.getElementById('masterCurrentPasswordInput').value;
+      const password = document.getElementById('masterPasswordInput').value;
+      const confirmation = document.getElementById('masterConfirmPasswordInput').value;
+      if (current !== appData.masterAccount.password) return alert('현재 비밀번호가 맞지 않습니다.');
+      if (!username || !password.trim() || password !== confirmation) return alert('아이디를 입력하고 새 비밀번호와 확인란을 똑같이 입력해 주세요.');
+      if ((appData.generalAdmins || []).some(a => a.username === username)) return alert('담당자가 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
+      appData.masterAccount = { ...appData.masterAccount, username, password };
+      currentAdminUser = appData.masterAccount;
       saveData();
-      showToast('👑 마스터 계정 정보(아이디/비밀번호)가 성공적으로 변경되었습니다.');
+      renderAdminMasterSubtab();
+      updateAdminRoleUI();
+      showToast('관리자 계정을 변경했습니다. 다음 로그인부터 새 계정을 사용해 주세요.');
     }
 
     /* ==========================================================================
@@ -2790,7 +2595,7 @@
         if (s.isHoliday) {
           opt.textContent = `[휴강일] ${s.date} ${s.note ? '(' + s.note + ')' : ''}`;
         } else {
-          opt.textContent = `${s.round || roundCounter}회기 (${s.date}) ${s.note ? '- ' + s.note : ''}`;
+          opt.textContent = `${s.round || roundCounter}회차 (${s.date}) ${s.note ? '- ' + s.note : ''}`;
           roundCounter++;
         }
         if (curSess && s.id === curSess.id) opt.selected = true;
@@ -2809,9 +2614,9 @@
 
       const opCount = getOperationalSessions(curProg).length;
       infoSpan.innerHTML = `
-        <span>기간: <strong>${curProg.startDate || '-'} ~ ${curProg.endDate || '-'}</strong></span> · 
-        <span>강사: <strong>${curProg.instructor || '-'}</strong></span> · 
-        <span>정원: <strong>${(curProg.participants || []).length}명</strong></span> · 
+        <span>기간: <strong>${curProg.startDate || '-'} ~ ${curProg.endDate || '-'}</strong></span> ·
+        <span>강사: <strong>${curProg.instructor || '-'}</strong></span> ·
+        <span>정원: <strong>${(curProg.participants || []).length}명</strong></span> ·
         <span style="color:var(--color-sora-deep);">실운영: <strong>${opCount}회차</strong></span>
       `;
 
@@ -2819,12 +2624,12 @@
       const kioskTitle = document.getElementById('kioskTitleHeading');
       const kioskSub = document.getElementById('kioskSubtitle');
       if (curSess) {
-        const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회기 (${curSess.date})`;
-        kioskTitle.innerHTML = curSess.isHoliday 
-          ? `오늘은 <span class="accent-sora">휴강일</span>입니다` 
+        const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회차 (${curSess.date})`;
+        kioskTitle.innerHTML = curSess.isHoliday
+          ? `오늘은 <span class="accent-sora">휴강일</span>입니다`
           : `어르신, <span class="accent-sora">${sessionLabel} 출석</span> 서명을 해 주세요!`;
-        kioskSub.textContent = curSess.isHoliday 
-          ? '오늘은 휴강일로 지정되어 있어 출석 서명을 진행하지 않습니다.' 
+        kioskSub.textContent = curSess.isHoliday
+          ? '오늘은 휴강일로 지정되어 있어 출석 서명을 진행하지 않습니다.'
           : `환영합니다! 본인의 이름을 누르시면 큰 서명창이 열립니다.`;
       }
     }
@@ -2896,7 +2701,7 @@
 
         const tile = document.createElement('div');
         tile.className = `participant-tile ${isAttended ? 'attended' : ''} ${isDroppedNow ? 'dropped' : ''}`;
-        
+
         let statusBadge = '';
         if (isDroppedNow) {
           statusBadge = '<span class="tile-badge badge-pending">중도포기</span>';
@@ -3073,7 +2878,7 @@
 
       const dataUrl = canvas.toDataURL('image/png');
       const key = `${activeParticipantForSig.id}_${sess.id}`;
-      
+
       const now = new Date();
       const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
@@ -3127,8 +2932,8 @@
       prog.sessions.forEach((s, idx) => {
         const card = document.createElement('div');
         card.className = `session-item-card ${s.isHoliday ? 'is-holiday' : ''}`;
-        
-        const roundTitle = s.isHoliday ? `[휴강일]` : `${s.round || opRoundCounter}회기`;
+
+        const roundTitle = s.isHoliday ? `[휴강일]` : `${s.round || opRoundCounter}회차`;
         if (!s.isHoliday) opRoundCounter++;
 
         card.innerHTML = `
@@ -3166,7 +2971,7 @@
       const prog = getCurrentProgram();
       if (!prog || !prog.sessions[index]) return;
       prog.sessions[index].isHoliday = isChecked;
-      
+
       let counter = 1;
       prog.sessions.forEach(s => {
         if (!s.isHoliday) {
@@ -3341,7 +3146,7 @@
           round: r,
           date: curr.toISOString().slice(0, 10),
           isHoliday: false,
-          note: `${r}회기`
+          note: `${r}회차`
         });
         curr.setDate(curr.getDate() + 7);
         r++;
@@ -3390,8 +3195,8 @@
         const tr = document.createElement('tr');
 
         const showDupeWarning = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-size:12px; font-weight:800;">(동명이인)</span>` : '';
-        const droppedBadge = p.isDropped 
-          ? `<span style="color:var(--color-danger); font-weight:800;">[${p.droppedSession || 1}회기 중도포기]</span>` 
+        const droppedBadge = p.isDropped
+          ? `<span style="color:var(--color-danger); font-weight:800;">[${p.droppedSession || 1}회차 중도포기]</span>`
           : `<span style="color:var(--color-pencil-gray); font-weight:600;">정상 참여</span>`;
 
         tr.innerHTML = `
@@ -3465,7 +3270,7 @@
       const droppedSession = isDropped ? parseInt(document.getElementById('partDroppedSession').value) || 1 : null;
 
       if (!name) {
-        alert('성명을 입력해 주세요.');
+        alert('이름을 입력해 주세요.');
         return;
       }
 
@@ -3511,7 +3316,7 @@
       }
     }
 
-    // Excel Batch Upload Handling
+    // 엑셀 Batch Upload Handling
     let parsedExcelRows = [];
 
     function openExcelUploadModal() {
@@ -3610,14 +3415,14 @@
       saveData();
       closeExcelUploadModal();
       renderAdminParticipantsSubtab();
-      showToast(`${addedCount}명의 참여자가 Excel에서 성공적으로 일괄 등록되었습니다.`);
+      showToast(`${addedCount}명의 참여자가 엑셀에서 성공적으로 일괄 등록되었습니다.`);
     }
 
     function downloadExcelTemplate() {
       const templateData = [
-        { "성명": "홍길동", "회원번호": "2026-0001", "연락처": "010-1234-5678", "비고": "스마트폰 기본반" },
-        { "성명": "김철수", "회원번호": "", "연락처": "010-9876-5432", "비고": "비회원 일반참여자" },
-        { "성명": "이영희", "회원번호": "2026-0004", "연락처": "010-5555-6666", "비고": "" }
+        { "이름": "홍길동", "회원번호": "2026-0001", "연락처": "010-1234-5678", "비고": "스마트폰 기본반" },
+        { "이름": "김철수", "회원번호": "", "연락처": "010-9876-5432", "비고": "비회원 일반참여자" },
+        { "이름": "이영희", "회원번호": "2026-0004", "연락처": "010-5555-6666", "비고": "" }
       ];
 
       const ws = XLSX.utils.json_to_sheet(templateData);
@@ -3635,7 +3440,7 @@
       const curSess = getCurrentSession();
       if (!curProg || !curSess) return;
 
-      const sessionTitle = curSess.isHoliday ? `휴강 (${curSess.date})` : `${curSess.round}회기 (${curSess.date})`;
+      const sessionTitle = curSess.isHoliday ? `휴강 (${curSess.date})` : `${curSess.round}회차 (${curSess.date})`;
       document.getElementById('adminAttendanceTitle').textContent = `[${curProg.name}] ${sessionTitle} 출석 관리`;
 
       const participants = curProg.participants || [];
@@ -3662,7 +3467,7 @@
           statusText = '<span style="color:#888; font-weight:700;">중도포기</span>';
         } else if (isAttended) {
           attended++;
-          statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">✓ 출석완료</span>';
+          statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">✓ 출석 완료</span>';
           if (record.signature) {
             sigThumb = `<img src="${record.signature}" class="sig-thumbnail" alt="서명">`;
           }
@@ -3821,7 +3626,7 @@
         pageDiv.className = 'a4-landscape-page';
 
         const totalPages = sessionChunks.length;
-        const pageRoundRange = `${chunkSessions[0].round}회기 ~ ${chunkSessions[chunkSessions.length - 1].round}회기`;
+        const pageRoundRange = `${chunkSessions[0].round}회차 ~ ${chunkSessions[chunkSessions.length - 1].round}회차`;
 
         pageDiv.innerHTML = `
           <!-- Header Area -->
@@ -3852,12 +3657,12 @@
             <thead>
               <tr>
                 <th style="width: 32px;">연번</th>
-                <th style="width: 70px;">성명</th>
+                <th style="width: 70px;">이름</th>
                 ${showMemberId ? '<th style="width: 75px;">회원번호</th>' : ''}
                 ${showPhone ? '<th style="width: 95px;">연락처</th>' : ''}
                 ${chunkSessions.map(s => `
                   <th>
-                    ${s.round}회기<br>
+                    ${s.round}회차<br>
                     <span style="font-size:10px; font-weight:normal; color:#555;">${s.date ? s.date.slice(5) : ''}</span>
                   </th>
                 `).join('')}
@@ -3907,7 +3712,7 @@
           <!-- Footer Area -->
           <div class="a4-footer">
             <div>* 비고: 중도포기자는 하단에 배치되며, 전체 운영 회차 기준으로 출석률이 자동 계산됩니다.</div>
-            <div>페이지: ${pageIndex + 1} / ${totalPages} · 출력일자: ${new Date().toISOString().slice(0,10)}</div>
+            <div>페이지: ${pageIndex + 1} / ${totalPages} · 인쇄일자: ${new Date().toISOString().slice(0,10)}</div>
           </div>
         `;
         container.appendChild(pageDiv);
@@ -3932,10 +3737,11 @@
 
     async function initApp() {
       await loadData();
+      updateOrgBrandDisplay();
       populateGlobalSelectors();
       initSignatureCanvas();
-      switchRole('kiosk');
-      
+      showEntryScreen();
+
       // Supabase 클라우드 동기화 비동기 초기화
       initSupabaseClient().then(async connected => {
         if (connected) {

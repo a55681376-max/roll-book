@@ -1109,8 +1109,8 @@
 
       <form class="org-gateway-form" onsubmit="handleOrgGatewayLogin(event)">
         <div class="form-group">
-          <label>소속 기관 / 복지관</label>
-          <input type="text" id="orgNameInput" value="행복노인복지관" placeholder="예: OO노인복지관" required>
+          <label>소속기관</label>
+          <input type="text" id="orgNameInput" value="행복복지관" placeholder="예: OO복지관" required>
         </div>
 
         <div class="form-group">
@@ -1123,8 +1123,7 @@
         </button>
 
         <div class="org-gateway-notice">
-          💡 초기 기본 보안 코드는 <strong>2026</strong> 입니다.<br>
-          (입장 후 관리자 모드는 별도 직원 비밀번호로 2중 보호됩니다)
+          💡 초기 기본 보안 코드는 <strong>2026</strong> 입니다.
         </div>
       </form>
     </div>
@@ -1224,11 +1223,18 @@
          ==================================================================== -->
     <section id="adminView" class="view-panel">
       <!-- Admin Top Status & Logout -->
-      <div class="card" style="padding: 14px 22px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center;">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span style="font-size:20px;">🛡️</span>
-          <span style="font-weight:800; color:var(--color-sora-deep);">직원 관리자 인증됨</span>
-          <span style="font-size:13px; color:var(--color-pencil-gray);">(모든 권한 사용 가능)</span>
+      <div class="card" style="padding: 14px 22px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <span style="font-size:22px;" id="adminRoleIcon">🛡️</span>
+          <div>
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-weight:900; color:var(--color-charcoal);" id="adminRoleNameDisplay">관리자 인증됨</span>
+              <span id="adminRoleBadge" class="hero-badge" style="font-size:11px; padding:3px 10px; margin:0;">일반 관리자</span>
+            </div>
+            <div style="font-size:12px; color:var(--color-pencil-gray);" id="adminRoleDescDisplay">
+              프로그램 및 참여자 출결 관리가 가능합니다.
+            </div>
+          </div>
         </div>
         <div style="display:flex; gap:8px;">
           <button class="btn btn-sm" onclick="openChangePasswordModal()">🔑 암호 변경</button>
@@ -1239,10 +1245,11 @@
       <!-- Admin Sub Tabs -->
       <div class="admin-subtabs">
         <div class="admin-subtab-group">
-          <button class="admin-subtab-btn active" onclick="switchAdminTab('program')">1. 프로그램 & 회차 관리</button>
-          <button class="admin-subtab-btn" onclick="switchAdminTab('participants')">2. 참여자 명단 (Excel 일괄)</button>
-          <button class="admin-subtab-btn" onclick="switchAdminTab('attendance')">3. 출석 현황 & 결석 처리</button>
-          <button class="admin-subtab-btn" onclick="switchAdminTab('print')">4. A4 출석부 생성 및 인쇄</button>
+          <button class="admin-subtab-btn active" id="subtabBtnProgram" onclick="switchAdminTab('program')">1. 프로그램 & 회차 관리</button>
+          <button class="admin-subtab-btn" id="subtabBtnParticipants" onclick="switchAdminTab('participants')">2. 참여자 명단 (Excel 일괄)</button>
+          <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">3. 출석 현황 & 결석 처리</button>
+          <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">4. A4 출석부 생성 및 인쇄</button>
+          <button class="admin-subtab-btn" id="subtabBtnMaster" onclick="switchAdminTab('master')" style="display:none; background:#fef3c7; color:#92400e; border-color:#fcd34d;">👑 5. 마스터 설정 (기관·관리자)</button>
         </div>
       </div>
 
@@ -1492,6 +1499,93 @@
           <!-- Dynamically generated pages -->
         </div>
       </div>
+
+      <!-- SUBTAB 5: MASTER MANAGEMENT (마스터 관리자 전용: 기관 및 일반 관리자 관리) -->
+      <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
+        
+        <!-- 1. 기관 정보 설정 카드 -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div>
+              <span class="bar-label" style="background:#fef3c7; color:#92400e;">MASTER AUTHORITY</span>
+              <h3 class="card-title">🏛️ 소속 기관 정보 및 1차 보안 코드 관리</h3>
+            </div>
+          </div>
+          <form onsubmit="saveMasterOrgSettings(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>소속 기관명 *</label>
+                <input type="text" id="masterOrgNameInput" placeholder="예: 행복노인복지관" required>
+              </div>
+              <div class="form-group">
+                <label>1차 접속 기관 보안 코드 (입장 비밀번호) *</label>
+                <input type="text" id="masterOrgCodeInput" placeholder="예: 2026" required style="letter-spacing: 1px;">
+                <small style="color:#64748b; font-size:12px; margin-top:4px; display:block;">
+                  * 링크 접속 시 입력하는 1차 보안 코드입니다.
+                </small>
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top: 14px;">
+              <button type="submit" class="btn btn-sora">기관 정보 저장</button>
+            </div>
+          </form>
+        </div>
+
+        <!-- 2. 일반 관리자 계정 목록 및 등록/수정 카드 -->
+        <div class="card" style="margin-bottom: 24px;">
+          <div class="card-header">
+            <div>
+              <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">ADMIN ACCOUNTS</span>
+              <h3 class="card-title">👤 일반 관리자 계정 목록 & 등록/수정</h3>
+            </div>
+            <button class="btn btn-sora btn-sm" onclick="openAdminAccountModal()">+ 새 관리자 등록</button>
+          </div>
+
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th style="width: 60px;">번호</th>
+                  <th>관리자 아이디 (ID)</th>
+                  <th>담당자 이름</th>
+                  <th>비밀번호 (PW)</th>
+                  <th>등록일시</th>
+                  <th style="width: 140px; text-align: center;">관리</th>
+                </tr>
+              </thead>
+              <tbody id="adminAccountsTableBody">
+                <!-- Rendered dynamically by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 3. 마스터 관리자 본인 계정 정보 변경 카드 -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <span class="bar-label" style="background:#fee2e2; color:#991b1b;">MASTER SECURITY</span>
+              <h3 class="card-title">👑 마스터 관리자 본인 계정 정보 변경</h3>
+            </div>
+          </div>
+          <form onsubmit="saveMasterAccountSettings(event)">
+            <div class="form-grid">
+              <div class="form-group">
+                <label>마스터 아이디 (ID) *</label>
+                <input type="text" id="masterUsernameInput" required placeholder="예: master">
+              </div>
+              <div class="form-group">
+                <label>새 마스터 비밀번호 (PW) *</label>
+                <input type="password" id="masterPasswordInput" required placeholder="새 마스터 비밀번호 입력">
+              </div>
+            </div>
+            <div style="display:flex; justify-content:flex-end; margin-top: 14px;">
+              <button type="submit" class="btn btn-sora">마스터 계정 정보 저장</button>
+            </div>
+          </form>
+        </div>
+
+      </div>
     </section>
 
   </main>
@@ -1500,29 +1594,46 @@
        MODALS
        ==================================================================== -->
 
-  <!-- Modal 0: Admin Password Login Modal (직원 관리자 로그인) -->
+  <!-- Modal 0: Admin Login Modal (마스터 관리자 / 일반 관리자 구분 로그인) -->
   <div id="adminLoginModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 440px; text-align: center;">
-      <div style="font-size: 46px; margin-bottom: 8px;">🔒</div>
-      <span class="hero-badge">관리자 인증</span>
+    <div class="modal-content" style="max-width: 460px; text-align: center;">
+      <div style="font-size: 46px; margin-bottom: 8px;">🛡️</div>
+      <span class="hero-badge" id="adminLoginBadge">관리자 인증</span>
       <h3 style="font-family: var(--font-family-display); font-size: 24px; font-weight: 900; margin: 10px 0 6px 0;">
-        직원 관리자 로그인
+        관리자 모드 로그인
       </h3>
-      <p style="font-size: 14px; color: var(--color-pencil-gray); margin-bottom: 20px;">
-        프로그램 및 참여자 관리를 위해 비밀번호를 입력해 주세요.
+      <p style="font-size: 14px; color: var(--color-pencil-gray); margin-bottom: 18px;">
+        원활한 운영 관리를 위해 관리자 계정으로 로그인해 주세요.
       </p>
 
+      <!-- Role Selector Tabs inside Modal -->
+      <div style="display: flex; gap: 8px; margin-bottom: 18px; background: #f1f5f9; padding: 5px; border-radius: 14px;">
+        <button type="button" id="loginTypeGeneralBtn" class="btn btn-sm" style="flex:1; font-weight:800; background:var(--color-sora); color:#fff; border-color:var(--color-sora-shadow);" onclick="selectLoginAdminType('general')">
+          👤 일반 관리자
+        </button>
+        <button type="button" id="loginTypeMasterBtn" class="btn btn-sm" style="flex:1; font-weight:800; background:#fff; color:#475569;" onclick="selectLoginAdminType('master')">
+          👑 마스터 관리자
+        </button>
+      </div>
+
       <form onsubmit="handleAdminLogin(event)">
+        <input type="hidden" id="loginAdminRoleType" value="general">
+
+        <div class="form-group" style="margin-bottom: 12px; text-align: left;">
+          <label>관리자 아이디 (ID)</label>
+          <input type="text" id="adminUsernameInput" placeholder="아이디 입력 (예: admin)" required autofocus style="font-size: 16px;">
+        </div>
+
         <div class="form-group" style="margin-bottom: 14px; text-align: left;">
-          <label>관리자 비밀번호</label>
-          <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" style="font-size: 18px; letter-spacing: 2px;" required autofocus>
-          <div style="font-size: 12px; color: var(--color-pencil-gray); margin-top: 4px;">
-            * 초기 비밀번호: <strong>1234</strong>
+          <label>관리자 비밀번호 (PW)</label>
+          <input type="password" id="adminPasswordInput" placeholder="비밀번호 입력" style="font-size: 16px; letter-spacing: 2px;" required>
+          <div id="adminLoginHint" style="font-size: 12px; color: var(--color-pencil-gray); margin-top: 6px; line-height: 1.4;">
+            * 일반 관리자 기본 계정: <strong>admin</strong> / <strong>1234</strong>
           </div>
         </div>
 
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-          <button type="button" class="btn" onclick="closeAdminLoginModal()">취소</button>
+          <button type="button" class="btn" onclick="closeAdminLoginModal()">취소 (키오스크로 이동)</button>
           <button type="submit" class="btn btn-sora">로그인</button>
         </div>
       </form>
@@ -1750,9 +1861,42 @@
         <button type="button" class="btn btn-sm btn-danger" onclick="disconnectSupabase()">연동 해제 (로컬 전환)</button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn" onclick="closeSupabaseModal()">닫기</button>
-          <button type="button" class="btn btn-sora" onclick="saveAndTestSupabase()">저장 및 연결</button>
+          <button type="submit" class="btn btn-sora" onclick="saveAndTestSupabase()">저장 및 연결</button>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- Modal 7: Add / Edit General Admin Account Modal (마스터 전용 계정 등록/수정) -->
+  <div id="adminAccountModal" class="modal-overlay hidden">
+    <div class="modal-content" style="max-width: 440px;">
+      <div class="modal-header">
+        <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">ADMIN ACCOUNT</span>
+        <h3 class="modal-title" id="adminAccountModalTitle">일반 관리자 계정 등록</h3>
+      </div>
+      <form onsubmit="saveAdminAccount(event)">
+        <input type="hidden" id="editAdminIndex" value="-1">
+        
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>관리자 아이디 (ID) *</label>
+          <input type="text" id="accUsernameInput" required placeholder="예: admin1, manager">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 12px;">
+          <label>담당자 성명 *</label>
+          <input type="text" id="accNameInput" required placeholder="예: 김담당, 이복지사">
+        </div>
+
+        <div class="form-group" style="margin-bottom: 16px;">
+          <label>비밀번호 (PW) *</label>
+          <input type="password" id="accPasswordInput" required placeholder="비밀번호 입력">
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; gap:10px;">
+          <button type="button" class="btn" onclick="closeAdminAccountModal()">취소</button>
+          <button type="submit" class="btn btn-sora" id="adminAccountSubmitBtn">계정 등록</button>
+        </div>
+      </form>
     </div>
   </div>
 
@@ -1769,15 +1913,26 @@
     const STORAGE_KEY = 'SENIOR_ATTENDANCE_DATA_V4_TEST';
     const ORG_SESSION_KEY = 'SENIOR_ATTENDANCE_ORG_AUTH_SESSION_V1';
 
-    // Default Security Passwords
-    const DEFAULT_ORG_NAME = '행복노인복지관';
+    // Default Security Passwords & Admin Accounts
+    const DEFAULT_ORG_NAME = '행복복지관';
     const DEFAULT_ORG_SECURITY_CODE = '2026'; // 접속 즉시 기관 보안 로그인 암호
-    const DEFAULT_ADMIN_PASSWORD = '1234';    // 직원 (관리자) 암호
+    const DEFAULT_ADMIN_PASSWORD = '1234';    // 기본 직원 (관리자) 암호
+
+    const DEFAULT_MASTER_ACCOUNT = {
+      username: 'master',
+      password: 'master1234'
+    };
+
+    const DEFAULT_GENERAL_ADMINS = [
+      { id: 'adm_001', username: 'admin', name: '기본 관리자', password: '1234', createdAt: '2026-10-12' }
+    ];
 
     const DEFAULT_DATA = {
       orgName: DEFAULT_ORG_NAME,
       orgSecurityCode: DEFAULT_ORG_SECURITY_CODE,
       adminPassword: DEFAULT_ADMIN_PASSWORD,
+      masterAccount: DEFAULT_MASTER_ACCOUNT,
+      generalAdmins: DEFAULT_GENERAL_ADMINS,
       activeProgramId: "prog_001",
       activeSessionId: "sess_003",
       programs: [
@@ -1871,7 +2026,9 @@
     let appData = null;
     let currentRole = 'kiosk'; // 'kiosk' | 'admin'
     let isAdminLoggedIn = false; // session login state
-    let currentAdminTab = 'program'; // 'program' | 'participants' | 'attendance' | 'print'
+    let currentAdminRole = 'general'; // 'master' | 'general'
+    let currentAdminUser = null; // logged-in admin user info
+    let currentAdminTab = 'program'; // 'program' | 'participants' | 'attendance' | 'print' | 'master'
     let activeParticipantForSig = null;
 
     /* ==========================================================================
@@ -2139,6 +2296,14 @@
         localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
       }
 
+      // 계정 및 기관 정보 하위 호환성 보강
+      if (!appData.orgName) appData.orgName = DEFAULT_ORG_NAME;
+      if (!appData.orgSecurityCode) appData.orgSecurityCode = DEFAULT_ORG_SECURITY_CODE;
+      if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
+      if (!appData.generalAdmins || !Array.isArray(appData.generalAdmins)) {
+        appData.generalAdmins = [ ...DEFAULT_GENERAL_ADMINS ];
+      }
+
       // 2. Supabase가 연결되어 있다면 클라우드 최신본으로 백그라운드 동기화
       if (isSupabaseConnected && supabaseClient) {
         const cloudData = await fetchFromSupabase();
@@ -2261,7 +2426,12 @@
         }
         updateOrgBrandDisplay();
         unlockOrgGateway();
-        showToast(`🏛️ ${enteredName} 보안 인증이 완료되었습니다.`);
+        showToast(`🏛️ ${enteredName} 보안 인증 완료! 관리자 인증으로 이동합니다.`);
+        
+        // 🚀 요구사항: 기관 보안 로그인 성공 후 즉시 관리자 모드 인증 화면으로 바로 이동!
+        setTimeout(() => {
+          openAdminLoginModal();
+        }, 200);
       } else {
         alert('기관 보안 코드가 일치하지 않습니다. (초기 기본 코드: 2026)');
         if (codeInput) {
@@ -2281,6 +2451,8 @@
     function lockOrgGateway() {
       sessionStorage.removeItem(ORG_SESSION_KEY);
       isAdminLoggedIn = false; // 관리자 모드도 함께 안전 로그아웃
+      currentAdminRole = 'general';
+      currentAdminUser = null;
       switchRole('kiosk');
       const overlay = document.getElementById('orgGatewayOverlay');
       if (overlay) {
@@ -2318,6 +2490,7 @@
         renderKioskGrid();
       } else if (role === 'admin') {
         document.getElementById('adminView').classList.add('active');
+        updateAdminRoleUI();
         renderAdminView();
       }
     }
@@ -2330,36 +2503,162 @@
       }
     }
 
+    /* ==========================================================================
+       4. ADMIN AUTHENTICATION: MASTER ADMIN & GENERAL ADMIN
+       ========================================================================== */
+    function selectLoginAdminType(type) {
+      const roleInput = document.getElementById('loginAdminRoleType');
+      const genBtn = document.getElementById('loginTypeGeneralBtn');
+      const masBtn = document.getElementById('loginTypeMasterBtn');
+      const hint = document.getElementById('adminLoginHint');
+      const userInput = document.getElementById('adminUsernameInput');
+      const badge = document.getElementById('adminLoginBadge');
+
+      roleInput.value = type;
+
+      if (type === 'master') {
+        genBtn.style.background = '#fff';
+        genBtn.style.color = '#475569';
+        genBtn.style.borderColor = '#cbd5e1';
+
+        masBtn.style.background = '#f59e0b';
+        masBtn.style.color = '#fff';
+        masBtn.style.borderColor = '#d97706';
+
+        badge.textContent = '👑 마스터 관리자 인증';
+        badge.style.background = '#fef3c7';
+        badge.style.color = '#92400e';
+
+        hint.innerHTML = '* 마스터 관리자 기본 계정: <strong>master</strong> / <strong>master1234</strong>';
+        if (!userInput.value || userInput.value === 'admin') {
+          userInput.value = 'master';
+        }
+      } else {
+        masBtn.style.background = '#fff';
+        masBtn.style.color = '#475569';
+        masBtn.style.borderColor = '#cbd5e1';
+
+        genBtn.style.background = 'var(--color-sora)';
+        genBtn.style.color = '#fff';
+        genBtn.style.borderColor = 'var(--color-sora-shadow)';
+
+        badge.textContent = '👤 일반 관리자 인증';
+        badge.style.background = 'var(--color-sora-light)';
+        badge.style.color = 'var(--color-sora-deep)';
+
+        hint.innerHTML = '* 일반 관리자 기본 계정: <strong>admin</strong> / <strong>1234</strong>';
+        if (!userInput.value || userInput.value === 'master') {
+          userInput.value = 'admin';
+        }
+      }
+      document.getElementById('adminPasswordInput').value = '';
+      document.getElementById('adminPasswordInput').focus();
+    }
+
     function openAdminLoginModal() {
+      selectLoginAdminType('general'); // 기본은 일반 관리자 선택
       document.getElementById('adminPasswordInput').value = '';
       document.getElementById('adminLoginModal').classList.remove('hidden');
       setTimeout(() => {
         document.getElementById('adminPasswordInput').focus();
-      }, 100);
+      }, 150);
     }
 
     function closeAdminLoginModal() {
       document.getElementById('adminLoginModal').classList.add('hidden');
+      if (!isAdminLoggedIn) {
+        switchRole('kiosk');
+      }
     }
 
     function handleAdminLogin(event) {
       event.preventDefault();
+      const loginType = document.getElementById('loginAdminRoleType').value;
+      const inputUser = document.getElementById('adminUsernameInput').value.trim();
       const inputPw = document.getElementById('adminPasswordInput').value;
-      const currentPw = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
 
-      if (inputPw === currentPw) {
-        isAdminLoggedIn = true;
-        closeAdminLoginModal();
-        switchRole('admin');
-        showToast('관리자 인증에 성공했습니다.');
+      if (loginType === 'master') {
+        const master = appData.masterAccount || DEFAULT_MASTER_ACCOUNT;
+        if (inputUser === master.username && inputPw === master.password) {
+          isAdminLoggedIn = true;
+          currentAdminRole = 'master';
+          currentAdminUser = { username: master.username, name: '마스터 관리자' };
+          closeAdminLoginModal();
+          switchRole('admin');
+          switchAdminTab('program');
+          showToast('👑 마스터 관리자로 인증되었습니다. (기관 및 관리자 제어 권한 부여)');
+          return;
+        } else {
+          alert('마스터 관리자 아이디 또는 비밀번호가 일치하지 않습니다.\n(기본 계정: master / master1234)');
+          document.getElementById('adminPasswordInput').focus();
+          return;
+        }
       } else {
-        alert('비밀번호가 일치하지 않습니다. (초기 비밀번호: 1234)');
-        document.getElementById('adminPasswordInput').focus();
+        // 일반 관리자 검증
+        const admins = appData.generalAdmins || DEFAULT_GENERAL_ADMINS;
+        const matched = admins.find(a => a.username === inputUser && a.password === inputPw);
+
+        // 구버전 단일 비밀번호(adminPassword) 호환 체크
+        const legacyPw = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
+        const legacyMatch = (inputUser === 'admin' && inputPw === legacyPw);
+
+        if (matched || legacyMatch) {
+          isAdminLoggedIn = true;
+          currentAdminRole = 'general';
+          currentAdminUser = matched || { username: 'admin', name: '일반 관리자' };
+          closeAdminLoginModal();
+          switchRole('admin');
+          switchAdminTab('program');
+          showToast(`👤 일반 관리자(${currentAdminUser.name || currentAdminUser.username})로 로그인되었습니다.`);
+          return;
+        } else {
+          alert('일반 관리자 아이디 또는 비밀번호가 일치하지 않습니다.\n(기본 계정: admin / 1234)');
+          document.getElementById('adminPasswordInput').focus();
+          return;
+        }
+      }
+    }
+
+    function updateAdminRoleUI() {
+      const roleIcon = document.getElementById('adminRoleIcon');
+      const roleName = document.getElementById('adminRoleNameDisplay');
+      const roleBadge = document.getElementById('adminRoleBadge');
+      const roleDesc = document.getElementById('adminRoleDescDisplay');
+      const masterTabBtn = document.getElementById('subtabBtnMaster');
+
+      if (currentAdminRole === 'master') {
+        if (roleIcon) roleIcon.textContent = '👑';
+        if (roleName) roleName.textContent = '마스터 관리자 인증됨';
+        if (roleBadge) {
+          roleBadge.textContent = '최고 관리자 (Master)';
+          roleBadge.style.background = '#fef3c7';
+          roleBadge.style.color = '#92400e';
+        }
+        if (roleDesc) roleDesc.textContent = '소속 기관 정보, 일반 관리자 계정 등록/수정 및 모든 시스템 제어가 가능합니다.';
+        if (masterTabBtn) masterTabBtn.style.display = 'inline-block';
+      } else {
+        if (roleIcon) roleIcon.textContent = '👤';
+        const uName = (currentAdminUser && currentAdminUser.name) ? currentAdminUser.name : '일반 관리자';
+        if (roleName) roleName.textContent = `${uName} 접속 중`;
+        if (roleBadge) {
+          roleBadge.textContent = '일반 관리자 (Admin)';
+          roleBadge.style.background = 'var(--color-sora-light)';
+          roleBadge.style.color = 'var(--color-sora-deep)';
+        }
+        if (roleDesc) roleDesc.textContent = '프로그램 운영, 참여자 관리 및 출석부 인쇄 업무를 수행할 수 있습니다.';
+        if (masterTabBtn) masterTabBtn.style.display = 'none';
+
+        // 혹시 마스터 탭에 머물러 있었다면 프로그램 탭으로 이동
+        if (currentAdminTab === 'master') {
+          switchAdminTab('program');
+        }
       }
     }
 
     function logoutAdmin() {
       isAdminLoggedIn = false;
+      currentAdminRole = 'general';
+      currentAdminUser = null;
       switchRole('kiosk');
       showToast('관리자 로그아웃 되었습니다.');
     }
@@ -2384,7 +2683,9 @@
       const curr = document.getElementById('currPwInput').value;
       const newPw = document.getElementById('newPwInput').value;
       const confirmPw = document.getElementById('newPwConfirmInput').value;
-      const actualCurr = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
+      const actualCurr = (currentAdminRole === 'master' && appData.masterAccount)
+        ? appData.masterAccount.password
+        : (currentAdminUser ? currentAdminUser.password : (appData.adminPassword || DEFAULT_ADMIN_PASSWORD));
 
       if (curr !== actualCurr) {
         alert('현재 관리자 비밀번호가 일치하지 않습니다.');
@@ -2402,6 +2703,14 @@
         appData.orgSecurityCode = newOrgCode;
       }
       if (newPw) {
+        if (currentAdminRole === 'master') {
+          if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
+          appData.masterAccount.password = newPw;
+        } else if (currentAdminUser) {
+          currentAdminUser.password = newPw;
+          const idx = (appData.generalAdmins || []).findIndex(a => a.id === currentAdminUser.id);
+          if (idx !== -1) appData.generalAdmins[idx].password = newPw;
+        }
         appData.adminPassword = newPw;
       }
 
@@ -2414,18 +2723,235 @@
     function switchAdminTab(subtab) {
       currentAdminTab = subtab;
       document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.classList.remove('active'));
-      const activeBtn = Array.from(document.querySelectorAll('.admin-subtab-btn')).find(b => b.getAttribute('onclick').includes(subtab));
+      const activeBtn = Array.from(document.querySelectorAll('.admin-subtab-btn')).find(b => b.getAttribute('onclick')?.includes(subtab));
       if (activeBtn) activeBtn.classList.add('active');
 
       document.getElementById('adminProgramSubtab').style.display = (subtab === 'program') ? 'block' : 'none';
       document.getElementById('adminParticipantsSubtab').style.display = (subtab === 'participants') ? 'block' : 'none';
       document.getElementById('adminAttendanceSubtab').style.display = (subtab === 'attendance') ? 'block' : 'none';
       document.getElementById('adminPrintSubtab').style.display = (subtab === 'print') ? 'block' : 'none';
+      
+      const masterSubtab = document.getElementById('adminMasterSubtab');
+      if (masterSubtab) {
+        masterSubtab.style.display = (subtab === 'master') ? 'block' : 'none';
+      }
 
       if (subtab === 'program') renderAdminProgramSubtab();
       if (subtab === 'participants') renderAdminParticipantsSubtab();
       if (subtab === 'attendance') renderAdminAttendanceSubtab();
       if (subtab === 'print') renderAdminPrintSubtab();
+      if (subtab === 'master') renderAdminMasterSubtab();
+    }
+
+    /* ==========================================================================
+       4-1. MASTER MANAGEMENT SUBTAB LOGIC (기관 & 일반 관리자 등록/수정)
+       ========================================================================== */
+    function renderAdminMasterSubtab() {
+      if (currentAdminRole !== 'master') {
+        alert('마스터 관리자만 접근 가능한 화면입니다.');
+        switchAdminTab('program');
+        return;
+      }
+
+      // 1. 소속 기관 정보 폼 채우기
+      const orgNameInput = document.getElementById('masterOrgNameInput');
+      const orgCodeInput = document.getElementById('masterOrgCodeInput');
+      if (orgNameInput) orgNameInput.value = appData.orgName || DEFAULT_ORG_NAME;
+      if (orgCodeInput) orgCodeInput.value = appData.orgSecurityCode || DEFAULT_ORG_SECURITY_CODE;
+
+      // 2. 마스터 계정 본인 폼 채우기
+      const mUser = appData.masterAccount || DEFAULT_MASTER_ACCOUNT;
+      const mUserInput = document.getElementById('masterUsernameInput');
+      const mPwInput = document.getElementById('masterPasswordInput');
+      if (mUserInput) mUserInput.value = mUser.username;
+      if (mPwInput) mPwInput.value = mUser.password;
+
+      // 3. 일반 관리자 목록 테이블 렌더링
+      renderAdminAccountsTable();
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+    }
+
+    function renderAdminAccountsTable() {
+      const tbody = document.getElementById('adminAccountsTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const admins = appData.generalAdmins || [];
+      if (admins.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">
+              등록된 일반 관리자 계정이 없습니다. 상단의 [+ 새 관리자 등록] 버튼을 눌러 계정을 생성해 주세요.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      admins.forEach((adm, idx) => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td style="text-align:center; font-weight:800; color:#64748b;">${idx + 1}</td>
+          <td><strong>${escapeHtml(adm.username)}</strong></td>
+          <td>${escapeHtml(adm.name || '-')}</td>
+          <td>
+            <span style="font-family:monospace; background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:700;">
+              ${escapeHtml(adm.password)}
+            </span>
+          </td>
+          <td style="font-size:12px; color:#64748b;">${adm.createdAt || '-'}</td>
+          <td style="text-align:center;">
+            <div style="display:flex; justify-content:center; gap:6px;">
+              <button class="btn btn-sm" onclick="openAdminAccountModal(${idx})">수정</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAdminAccount(${idx})">삭제</button>
+            </div>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function saveMasterOrgSettings(e) {
+      if (e) e.preventDefault();
+      const name = document.getElementById('masterOrgNameInput').value.trim();
+      const code = document.getElementById('masterOrgCodeInput').value.trim();
+
+      if (!name || !code) {
+        alert('기관명과 1차 접속 기관 보안 코드를 모두 입력해 주세요.');
+        return;
+      }
+
+      appData.orgName = name;
+      appData.orgSecurityCode = code;
+      saveData();
+      updateOrgBrandDisplay();
+      
+      const firstInput = document.getElementById('orgNameInput');
+      if (firstInput) firstInput.value = name;
+
+      showToast(`🏛️ 소속 기관 정보 및 1차 보안 코드가 성공적으로 저장되었습니다.`);
+    }
+
+    function openAdminAccountModal(index = -1) {
+      const modal = document.getElementById('adminAccountModal');
+      const title = document.getElementById('adminAccountModalTitle');
+      const submitBtn = document.getElementById('adminAccountSubmitBtn');
+      const editIdx = document.getElementById('editAdminIndex');
+
+      editIdx.value = index;
+
+      if (index >= 0) {
+        const adm = appData.generalAdmins[index];
+        title.textContent = '일반 관리자 계정 수정';
+        submitBtn.textContent = '수정 완료';
+        document.getElementById('accUsernameInput').value = adm.username;
+        document.getElementById('accNameInput').value = adm.name || '';
+        document.getElementById('accPasswordInput').value = adm.password;
+      } else {
+        title.textContent = '새 일반 관리자 계정 등록';
+        submitBtn.textContent = '계정 등록';
+        document.getElementById('accUsernameInput').value = '';
+        document.getElementById('accNameInput').value = '';
+        document.getElementById('accPasswordInput').value = '';
+      }
+
+      modal.classList.remove('hidden');
+      setTimeout(() => {
+        document.getElementById('accUsernameInput').focus();
+      }, 100);
+    }
+
+    function closeAdminAccountModal() {
+      document.getElementById('adminAccountModal').classList.add('hidden');
+    }
+
+    function saveAdminAccount(e) {
+      if (e) e.preventDefault();
+      const index = parseInt(document.getElementById('editAdminIndex').value, 10);
+      const username = document.getElementById('accUsernameInput').value.trim();
+      const name = document.getElementById('accNameInput').value.trim();
+      const password = document.getElementById('accPasswordInput').value.trim();
+
+      if (!username || !password) {
+        alert('아이디와 비밀번호를 모두 입력해 주세요.');
+        return;
+      }
+
+      if (!appData.generalAdmins) appData.generalAdmins = [];
+
+      // 아이디 중복 검사 (마스터 아이디 및 다른 일반 관리자)
+      if (username === (appData.masterAccount?.username || 'master')) {
+        alert('마스터 관리자 아이디와 동일한 아이디는 사용할 수 없습니다.');
+        return;
+      }
+
+      const dupIdx = appData.generalAdmins.findIndex(a => a.username === username);
+      if (dupIdx !== -1 && dupIdx !== index) {
+        alert('이미 사용 중인 일반 관리자 아이디입니다. 다른 아이디를 입력해 주세요.');
+        return;
+      }
+
+      if (index >= 0 && index < appData.generalAdmins.length) {
+        // 기존 계정 수정
+        appData.generalAdmins[index].username = username;
+        appData.generalAdmins[index].name = name;
+        appData.generalAdmins[index].password = password;
+        showToast(`👤 관리자 계정(${username}) 정보가 수정되었습니다.`);
+      } else {
+        // 신규 계정 추가
+        const newAdmin = {
+          id: 'adm_' + Date.now(),
+          username: username,
+          name: name,
+          password: password,
+          createdAt: new Date().toISOString().slice(0, 10)
+        };
+        appData.generalAdmins.push(newAdmin);
+        showToast(`👤 새 관리자 계정(${username})이 등록되었습니다.`);
+      }
+
+      saveData();
+      renderAdminAccountsTable();
+      closeAdminAccountModal();
+    }
+
+    function deleteAdminAccount(index) {
+      if (index < 0 || index >= appData.generalAdmins.length) return;
+      const target = appData.generalAdmins[index];
+
+      if (confirm(`관리자 계정 [${target.username} (${target.name || ''})]을(를) 삭제하시겠습니까?`)) {
+        appData.generalAdmins.splice(index, 1);
+        saveData();
+        renderAdminAccountsTable();
+        showToast(`관리자 계정이 삭제되었습니다.`);
+      }
+    }
+
+    function saveMasterAccountSettings(e) {
+      if (e) e.preventDefault();
+      const newUsername = document.getElementById('masterUsernameInput').value.trim();
+      const newPassword = document.getElementById('masterPasswordInput').value.trim();
+
+      if (!newUsername || !newPassword) {
+        alert('마스터 아이디와 비밀번호를 모두 입력해 주세요.');
+        return;
+      }
+
+      if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
+      appData.masterAccount.username = newUsername;
+      appData.masterAccount.password = newPassword;
+
+      saveData();
+      showToast('👑 마스터 계정 정보(아이디/비밀번호)가 성공적으로 변경되었습니다.');
     }
 
     /* ==========================================================================

@@ -36,9 +36,17 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  node('printScopeType').value='all';node('printSessionsPerPage').value='6';node('printOrientation').value='portrait';
  run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 portrait'));
  const page=node('a4PagesContainer').children[0];assert(page.className.includes('a4-portrait-page'));assert(page.innerHTML.includes('테스트 프로그램 출석부'));assert(!page.innerHTML.includes('* 비고:'));
+ const second=node('a4PagesContainer').children[1];
+ const attendanceColumns=p=>[...p.innerHTML.matchAll(/<colgroup>([\s\S]*?)<\/colgroup>/g)][1][1];
+ assert.equal(attendanceColumns(page),attendanceColumns(second),'Last page retains the same column widths');
+ assert.equal((second.innerHTML.match(/aria-label="빈 회차"/g)||[]).length,4);
+ assert(page.innerHTML.includes('금요일 10:00-12:00'));assert(!page.innerHTML.includes('1회차 ~ 6회차'));
+ assert.equal(run("formatProgramSchedule({daysOfWeek:[5,1,5],time:'10:00 ~ 11:00'})"),'월요일, 금요일 10:00-11:00');
+ assert.equal(run("formatProgramSchedule({})"),'-');
  node('printOrientation').value='landscape';run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 landscape'));
  await run('logoutAdmin()');assert.equal(run('cloudToken'),'');assert.equal(run('appData.programs.length'),0);
  const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
  assert(!html.includes(".from(SUPABASE_TABLE_NAME)"));assert(!html.includes('master1234'));assert(!html.includes('sb_secret_')||html.includes("key.startsWith('sb_secret_')"));
+ assert(!html.includes('SESSION SCHEDULE'));assert(!html.includes('회원번호는 필수 항목'));assert(!html.includes('서명 돕기'));
  console.log('PASS: server API login, no cached private data, role separation, account changes, masked passwords, portrait/landscape, logout, unique IDs');
 })().catch(e=>{console.error(e);process.exitCode=1;});

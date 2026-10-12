@@ -798,6 +798,7 @@
 
     .a4-meta-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       margin-bottom: 14px;
       font-size: 12px;
@@ -810,13 +811,13 @@
 
     .a4-meta-table th {
       background: #f2f2f2;
-      width: 14%;
       text-align: center;
       font-weight: bold;
     }
 
     .a4-attendance-table {
       width: 100%;
+      table-layout: fixed;
       border-collapse: collapse;
       font-size: 11px;
       text-align: center;
@@ -826,7 +827,7 @@
       border: 1px solid #444;
       padding: 6px 4px;
       vertical-align: middle;
-      height: 38px;
+      height: 48px;
     }
 
     .a4-attendance-table th {
@@ -978,6 +979,23 @@
     }
   </style>
   <style id="printPageStyle"></style>
+  <style>
+    @media screen {
+      .card, .program-bar, .kiosk-hero { border-width:1px; box-shadow:0 2px 8px rgba(30,55,80,.04); }
+      .card { padding:20px; margin-bottom:18px; }
+      .card-header { gap:12px; flex-wrap:wrap; margin-bottom:16px; border-bottom-width:1px; }
+      .card-header > div:last-child { flex-wrap:wrap; }
+      .program-bar { padding:14px 18px; margin-bottom:18px; }
+      .kiosk-hero { padding:24px; margin-bottom:18px; }
+      .btn, .role-btn, .admin-subtab-btn { box-shadow:none !important; border-width:1px; min-height:44px; }
+      .btn:hover, .btn:active, .role-btn.active { transform:none; }
+      .btn:focus-visible, .role-btn:focus-visible, .admin-subtab-btn:focus-visible { outline:3px solid var(--color-sora); outline-offset:3px; }
+      .session-item-card, .print-controls { border-width:1px; box-shadow:none; }
+      .participant-tile { box-shadow:0 2px 6px rgba(30,55,80,.06); }
+      .participant-tile.attended, .participant-tile:hover { box-shadow:0 2px 8px rgba(30,55,80,.1); }
+      .print-controls { padding:18px; }
+    }
+  </style>
 </head>
 <body>
 
@@ -1114,22 +1132,22 @@
           <form id="programForm" onsubmit="saveCurrentProgram(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label for="progName">프로그램명 (필수)</label>
+                <label for="progName">프로그램명</label>
                 <input type="text" id="progName" required placeholder="예: 시니어 스마트폰 기초교실">
               </div>
               <div class="form-group">
-                <label>운영기간 (시작일 ~ 종료일) (필수)</label>
+                <label>운영기간 (시작일 ~ 종료일)</label>
                 <div style="display: flex; gap: 8px;">
                   <input type="date" id="progStartDate" required onchange="autoGenerateSessionsPreview()">
                   <input type="date" id="progEndDate" required onchange="autoGenerateSessionsPreview()">
                 </div>
               </div>
               <div class="form-group">
-                <label for="progTotalSessions">총 회차수 (필수)</label>
+                <label for="progTotalSessions">총 회차수</label>
                 <input type="number" id="progTotalSessions" min="1" max="50" value="8" required onchange="autoGenerateSessionsPreview()">
               </div>
               <div class="form-group">
-                <label>운영 요일 (필수)</label>
+                <label>운영 요일</label>
                 <div class="checkbox-group" id="progDayCheckboxes">
                   <label class="checkbox-label"><input type="checkbox" value="1"> 월</label>
                   <label class="checkbox-label"><input type="checkbox" value="2"> 화</label>
@@ -1148,7 +1166,7 @@
                 <input type="text" id="progLocation" placeholder="예: 3층 정보화교육실">
               </div>
               <div class="form-group">
-                <label for="progManager">담당자 (사회복지사)</label>
+                <label for="progManager">담당자</label>
                 <input type="text" id="progManager" placeholder="예: 이영희 사회복지사">
               </div>
               <div class="form-group">
@@ -1168,7 +1186,6 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label">SESSION SCHEDULE</span>
               <h3 class="card-title">회차 관리</h3>
             </div>
             <div style="display:flex; gap:8px;">
@@ -1201,8 +1218,7 @@
           </div>
 
           <div style="margin-bottom: 14px; font-size: 13px; color: var(--color-pencil-gray); font-weight: 500;">
-            * 회원번호는 필수 항목이 아닙니다. 비회원 참여자 및 중장년 참여자도 등록 가능합니다.<br>
-            * 동명이인이 존재하는 경우 출석 화면에 회원번호가 자동으로 함께 표기되어 구분됩니다.
+            이름이 같은 참여자는 회원번호로 구분합니다.
           </div>
 
           <div class="table-container">
@@ -1268,7 +1284,7 @@
                   <th>연락처</th>
                   <th>출석 상태</th>
                   <th>전자서명 확인</th>
-                  <th style="width: 220px; text-align: center;">관리 / 서명 지원</th>
+                  <th style="width: 220px; text-align: center;">출석 관리</th>
                 </tr>
               </thead>
               <tbody id="adminAttendanceTableBody">
@@ -1610,15 +1626,15 @@
         <h3 class="modal-title">새 배움터 프로그램 만들기</h3>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgTitle">프로그램명 (필수)</label>
+        <label for="newProgTitle">프로그램명</label>
         <input type="text" id="newProgTitle" placeholder="예: 시니어 스마트폰 기초과정" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgStart">시작일자 (필수)</label>
+        <label for="newProgStart">시작일자</label>
         <input type="date" id="newProgStart" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgEnd">종료일자 (필수)</label>
+        <label for="newProgEnd">종료일자</label>
         <input type="date" id="newProgEnd" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
@@ -3375,7 +3391,7 @@
           <td>${sigThumb}</td>
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:6px;">
-              <button class="btn btn-sm btn-sora" data-participant-id="${escapeHtml(p.id)}" onclick="adminOpenSign(this.dataset.participantId)">서명 돕기</button>
+              <button class="btn btn-sm btn-sora" data-participant-id="${escapeHtml(p.id)}" onclick="adminOpenSign(this.dataset.participantId)">서명</button>
               <button class="btn btn-sm ${isAbsent ? 'btn-sora' : 'btn-danger'}" data-participant-id="${escapeHtml(p.id)}" onclick="adminToggleAbsent(this.dataset.participantId)">
                 ${isAbsent ? '결석 취소' : '결석 처리'}
               </button>
@@ -3479,6 +3495,13 @@
       return opSessions;
     }
 
+    function formatProgramSchedule(prog) {
+      const labels = ['일요일','월요일','화요일','수요일','목요일','금요일','토요일'];
+      const days = [...new Set((prog.daysOfWeek || []).map(Number))].filter(d=>Number.isInteger(d) && d>=0 && d<=6).sort((a,b)=>((a+6)%7)-((b+6)%7)).map(d=>labels[d]).join(', ');
+      const time = String(prog.time || '').replace(/\s*[~～–—-]\s*/g, '-').trim();
+      return [days,time].filter(Boolean).join(' ') || '-';
+    }
+
     function renderA4PrintPages() {
       const orientation = document.getElementById('printOrientation').value === 'portrait' ? 'portrait' : 'landscape';
       document.getElementById('printPageStyle').textContent = `@media print { @page { size: A4 ${orientation}; margin: 10mm 12mm; } }`;
@@ -3497,6 +3520,11 @@
       const showMemberId = document.getElementById('chkPrintMemberId').checked;
       const showRate = document.getElementById('chkPrintRate').checked;
       const chunkSize = parseInt(document.getElementById('printSessionsPerPage').value) || 6;
+      const sessionSlots = Math.min(chunkSize, sessionsToPrint.length);
+      const baseWidths = [5,8,...(showMemberId ? [10] : []),...(showPhone ? [14] : [])];
+      const trailingWidths = [...(showRate ? [7] : []),10];
+      const sessionWidth = (100 - [...baseWidths,...trailingWidths].reduce((sum,w)=>sum+w,0)) / sessionSlots;
+      const columnWidths = [...baseWidths,...Array(sessionSlots).fill(sessionWidth),...trailingWidths];
 
       const activeParticipants = (prog.participants || []).filter(p => !p.isDropped);
       const droppedParticipants = (prog.participants || []).filter(p => p.isDropped);
@@ -3512,22 +3540,26 @@
         pageDiv.className = 'a4-landscape-page' + (orientation === 'portrait' ? ' a4-portrait-page' : '');
 
         const totalPages = sessionChunks.length;
-        const pageRoundRange = `${Number(chunkSessions[0].round)}회차 ~ ${Number(chunkSessions[chunkSessions.length - 1].round)}회차`;
+        const pageSessions = Array.from({length:sessionSlots},(_,i)=>chunkSessions[i] || null);
 
         pageDiv.innerHTML = `
           <!-- Header Area -->
           <div class="a4-header">
             <h2 class="a4-title">${escapeHtml(prog.name)} 출석부</h2>
-            <div>${pageRoundRange}</div>
           </div>
 
           <!-- Program Meta Info Table -->
           <table class="a4-meta-table">
+            <colgroup>${Array.from({length:3},()=>'<col style="width:12%;"><col style="width:21.3333%;">').join('')}</colgroup>
             <tr>
               <th>프로그램명</th>
-              <td colspan="3"><strong>${escapeHtml(prog.name)}</strong></td>
+              <td colspan="5"><strong>${escapeHtml(prog.name)}</strong></td>
+            </tr>
+            <tr>
               <th>운영기간</th>
-              <td>${escapeHtml(prog.startDate || '')} ~ ${escapeHtml(prog.endDate || '')}</td>
+              <td colspan="2">${escapeHtml(prog.startDate || '')} ~ ${escapeHtml(prog.endDate || '')}</td>
+              <th>운영요일·시간</th>
+              <td colspan="2">${escapeHtml(formatProgramSchedule(prog))}</td>
             </tr>
             <tr>
               <th>담당자</th>
@@ -3535,26 +3567,27 @@
               <th>강사명</th>
               <td>${escapeHtml(prog.instructor || '-')}</td>
               <th>교육장소</th>
-              <td>${escapeHtml(prog.location || '-')} (${escapeHtml(prog.time || '')})</td>
+              <td>${escapeHtml(prog.location || '-')}</td>
             </tr>
           </table>
 
           <!-- Attendance Grid -->
           <table class="a4-attendance-table">
+            <colgroup>${columnWidths.map(w=>`<col style="width:${w}%;">`).join('')}</colgroup>
             <thead>
               <tr>
-                <th style="width: 32px;">연번</th>
-                <th style="width: 70px;">이름</th>
-                ${showMemberId ? '<th style="width: 75px;">회원번호</th>' : ''}
-                ${showPhone ? '<th style="width: 95px;">연락처</th>' : ''}
-                ${chunkSessions.map(s => `
+                <th>번호</th>
+                <th>이름</th>
+                ${showMemberId ? '<th>회원번호</th>' : ''}
+                ${showPhone ? '<th>연락처</th>' : ''}
+                ${pageSessions.map(s => s ? `
                   <th>
                     ${Number(s.round)}회차<br>
                     <span style="font-size:10px; font-weight:normal; color:#555;">${escapeHtml(s.date ? s.date.slice(5) : '')}</span>
                   </th>
-                `).join('')}
-                ${showRate ? '<th style="width: 55px;">출석률</th>' : ''}
-                <th style="width: 60px;">비고</th>
+                ` : '<th aria-label="빈 회차"></th>').join('')}
+                ${showRate ? '<th>출석률</th>' : ''}
+                <th>비고</th>
               </tr>
             </thead>
             <tbody>
@@ -3567,7 +3600,8 @@
                     <td><strong>${escapeHtml(p.name)}</strong></td>
                     ${showMemberId ? `<td>${escapeHtml(p.memberId || '-')}</td>` : ''}
                     ${showPhone ? `<td>${escapeHtml(p.phone || '-')}</td>` : ''}
-                    ${chunkSessions.map(s => {
+                    ${pageSessions.map(s => {
+                      if (!s) return '<td></td>';
                       const key = `${p.id}_${s.id}`;
                       const record = prog.records[key];
                       const isDroppedInThisSession = isDropped && s.round >= (p.droppedSession || 999);

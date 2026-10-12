@@ -32,6 +32,14 @@ node('editAdminIndex').value='-1';node('accUsernameInput').value='staff2';node('
 run('saveAdminAccount({preventDefault(){}})');assert.equal(run("appData.generalAdmins.find(a=>a.username==='staff2').memo"),'미술 담당');
 run("logoutAdmin();login('general','staff2','staff-pass')");assert.equal(run('currentRole'),'kiosk');
 assert.equal(run('appData.programs.length'),1);
+run("appData=normalizeAccountData({adminPassword:'legacy-secret',programs:[{id:'kept'}]});showEntryScreen();login('master','master','master1234')");
+assert.equal(run('currentRole'),'admin');
+run("logoutAdmin();login('general','admin','1234')");assert.equal(run('currentRole'),'entry');
+run("login('general','admin','legacy-secret')");assert.equal(run('currentRole'),'kiosk');
+assert.equal(run('appData.programs[0].id'),'kept');
+run("appData=normalizeAccountData({masterAccount:{username:'changed',password:'custom'},generalAdmins:[],adminPassword:'legacy-secret'});showEntryScreen();login('general','admin','legacy-secret')");
+assert.equal(run('currentRole'),'entry');assert.equal(run('appData.generalAdmins.length'),0);
+assert.equal(run('appData.masterAccount.username'),'changed');
 const ids=[...html.matchAll(/\bid="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
 assert(!html.includes('키오스크'));assert(!html.includes('일반 관리자'));assert(!html.includes('직원 (관리자)'));
 console.log('PASS: entry, invalid login, attendance, repeated authentication, role separation, account change, staff registration, data retention, unique IDs, terminology');

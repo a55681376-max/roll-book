@@ -1797,6 +1797,17 @@
     })();
 
     let appData = null;
+    function normalizeAccountData(data) {
+      if (!data || typeof data !== 'object') return data;
+      if (!data.masterAccount) data.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
+      if (!Array.isArray(data.generalAdmins)) {
+        data.generalAdmins = DEFAULT_GENERAL_ADMINS.map(account => ({
+          ...account,
+          password: data.adminPassword || account.password
+        }));
+      }
+      return data;
+    }
     let currentRole = 'entry'; // 'kiosk' | 'admin'
     let isAdminLoggedIn = false; // session login state
     let currentAdminRole = 'general'; // 'master' | 'general'
@@ -1981,7 +1992,7 @@
           }, (payload) => {
             if (payload.new && payload.new.payload) {
               // 다른 기기에서 갱신된 데이터 반영
-              appData = payload.new.payload;
+              appData = normalizeAccountData(payload.new.payload);
               localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
               renderCurrentView();
               showToast('☁️ 다른 기기의 출석 변경사항이 실시간 동기화되었습니다.');
@@ -2027,7 +2038,7 @@
           showToast('⚡ Supabase 연결 성공! 현재 데이터가 클라우드에 업로드되었습니다.');
         } else {
           // 클라우드에 데이터가 있으면 클라우드 데이터로 갱신
-          appData = cloudData;
+          appData = normalizeAccountData(cloudData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
           initAppUI();
           showToast('⚡ Supabase 연결 성공! 클라우드 최신 데이터를 불러왔습니다.');
@@ -2060,7 +2071,7 @@
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         try {
-          appData = JSON.parse(stored);
+          appData = normalizeAccountData(JSON.parse(stored));
         } catch (e) {
           appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
         }
@@ -2081,7 +2092,7 @@
       if (isSupabaseConnected && supabaseClient) {
         const cloudData = await fetchFromSupabase();
         if (cloudData) {
-          appData = cloudData;
+          appData = normalizeAccountData(cloudData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
           renderCurrentView();
         }
@@ -2139,7 +2150,7 @@
         try {
           const parsed = JSON.parse(e.target.result);
           if (parsed && parsed.programs) {
-            appData = parsed;
+            appData = normalizeAccountData(parsed);
             if (!appData.adminPassword) appData.adminPassword = DEFAULT_ADMIN_PASSWORD;
             saveData();
             initApp();
@@ -3747,7 +3758,7 @@
         if (connected) {
           const cloudData = await fetchFromSupabase();
           if (cloudData) {
-            appData = cloudData;
+            appData = normalizeAccountData(cloudData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             initAppUI();
             showToast('⚡ Supabase 클라우드와 실시간 연결되었습니다.');

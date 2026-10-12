@@ -933,17 +933,210 @@
         page-break-after: always;
       }
     }
+    /* ==========================================================================
+       ORGANIZATION SECURITY GATEWAY STYLES (접속 즉시 기관 보안 로그인)
+       ========================================================================== */
+    .org-gateway-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: radial-gradient(circle at 50% 20%, #f0f7fe 0%, #e1effd 50%, #d0e6fb 100%);
+      z-index: 10000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      backdrop-filter: blur(12px);
+      transition: opacity 0.35s ease, visibility 0.35s ease;
+    }
+
+    .org-gateway-overlay.unlocked {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    .org-gateway-card {
+      width: 100%;
+      max-width: 480px;
+      background: #ffffff;
+      border: 3px solid #1e293b;
+      border-radius: 28px;
+      padding: 38px 32px;
+      box-shadow: 0 16px 0 #1e293b, 0 30px 60px rgba(0, 0, 0, 0.15);
+      text-align: center;
+      animation: popInGateway 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popInGateway {
+      0% { transform: scale(0.9) translateY(20px); opacity: 0; }
+      100% { transform: scale(1) translateY(0); opacity: 1; }
+    }
+
+    .org-gateway-icon {
+      font-size: 58px;
+      line-height: 1;
+      margin-bottom: 12px;
+      display: inline-block;
+      animation: bounceIcon 2.6s infinite ease-in-out;
+    }
+
+    @keyframes bounceIcon {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-8px); }
+    }
+
+    .org-gateway-badge {
+      display: inline-block;
+      background: #e0f2fe;
+      color: #0284c7;
+      font-size: 13px;
+      font-weight: 800;
+      padding: 6px 16px;
+      border-radius: 999px;
+      border: 2px solid #bae6fd;
+      margin-bottom: 12px;
+      letter-spacing: 0.5px;
+    }
+
+    .org-gateway-title {
+      font-family: var(--font-family-display);
+      font-size: 26px;
+      font-weight: 900;
+      color: #0f172a;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .org-gateway-desc {
+      font-size: 14px;
+      color: #64748b;
+      line-height: 1.5;
+      margin-bottom: 24px;
+    }
+
+    .org-gateway-form {
+      text-align: left;
+    }
+
+    .org-gateway-form .form-group {
+      margin-bottom: 16px;
+    }
+
+    .org-gateway-form label {
+      display: block;
+      font-size: 13px;
+      font-weight: 800;
+      color: #334155;
+      margin-bottom: 6px;
+    }
+
+    .org-gateway-form input,
+    .org-gateway-form select {
+      width: 100%;
+      padding: 14px 16px;
+      font-size: 16px;
+      font-weight: 700;
+      border: 2.5px solid #cbd5e1;
+      border-radius: 16px;
+      outline: none;
+      transition: all 0.2s ease;
+      background: #f8fafc;
+    }
+
+    .org-gateway-form input:focus,
+    .org-gateway-form select:focus {
+      border-color: var(--color-sora);
+      background: #ffffff;
+      box-shadow: 0 0 0 4px rgba(79, 168, 234, 0.2);
+    }
+
+    .org-gateway-btn {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: 900;
+      font-family: var(--font-family-display);
+      color: #ffffff;
+      background: var(--color-sora);
+      border: 3px solid #1e293b;
+      border-radius: 18px;
+      box-shadow: 0 6px 0 #1e293b;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      margin-top: 10px;
+    }
+
+    .org-gateway-btn:hover {
+      background: var(--color-sora-hover);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 0 #1e293b;
+    }
+
+    .org-gateway-btn:active {
+      transform: translateY(4px);
+      box-shadow: 0 2px 0 #1e293b;
+    }
+
+    .org-gateway-notice {
+      margin-top: 18px;
+      padding: 12px 14px;
+      background: #f1f5f9;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #64748b;
+      line-height: 1.45;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
+
+  <!-- ====================================================================
+       ORGANIZATION SECURITY GATEWAY (접속 즉시 기관 보안 로그인 오버레이)
+       ==================================================================== -->
+  <div id="orgGatewayOverlay" class="org-gateway-overlay">
+    <div class="org-gateway-card">
+      <div class="org-gateway-icon">🏛️</div>
+      <span class="org-gateway-badge">기관 보안 인증</span>
+      <h2 class="org-gateway-title">노인복지관 전자출석부</h2>
+      <p class="org-gateway-desc">
+        어르신 개인정보 및 출석부 보안을 위해<br>
+        <strong>기관 보안 코드</strong>를 입력해 주시기 바랍니다.
+      </p>
+
+      <form class="org-gateway-form" onsubmit="handleOrgGatewayLogin(event)">
+        <div class="form-group">
+          <label>소속 기관 / 복지관</label>
+          <input type="text" id="orgNameInput" value="행복노인복지관" placeholder="예: OO노인복지관" required>
+        </div>
+
+        <div class="form-group">
+          <label>기관 보안 코드 (비밀번호)</label>
+          <input type="password" id="orgSecurityCodeInput" placeholder="기관 보안 코드 입력" style="letter-spacing: 2px;" required autofocus>
+        </div>
+
+        <button type="submit" class="org-gateway-btn">
+          <span>입장하기 🔓</span>
+        </button>
+
+        <div class="org-gateway-notice">
+          💡 초기 기본 보안 코드는 <strong>2026</strong> 입니다.<br>
+          (입장 후 관리자 모드는 별도 직원 비밀번호로 2중 보호됩니다)
+        </div>
+      </form>
+    </div>
+  </div>
 
   <!-- Top Site Header (소라색 & 책/연필 마스코트) -->
   <header class="site-header">
     <div class="brand-area" onclick="switchRole('kiosk')" title="출석 화면으로 이동">
       <div class="mascot-avatar">📚</div>
       <div class="brand-text">
-        <h1>노인복지관 전자출석부</h1>
-        <p>Senior Attendance System · 소라색 배움터</p>
+        <h1 id="headerOrgTitleDisplay">노인복지관 전자출석부</h1>
+        <p id="headerOrgSubDisplay">Senior Attendance System · 소라색 배움터</p>
       </div>
     </div>
 
@@ -966,6 +1159,7 @@
       <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
       <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
       <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
+      <button class="btn btn-sm" onclick="lockOrgGateway()" title="화면 잠금 (기관 보안 로그인으로 복귀)">🔒 잠금</button>
       <button class="btn btn-sm btn-danger" onclick="resetToSampleData()" title="초기 데이터 복원">초기화</button>
     </div>
   </header>
@@ -1335,29 +1529,45 @@
     </div>
   </div>
 
-  <!-- Modal 0-1: Change Admin Password Modal (비밀번호 변경) -->
+  <!-- Modal 0-1: Change Admin & Org Password Modal (비밀번호 변경) -->
   <div id="changePasswordModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 440px;">
+    <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
-        <span class="bar-label">SECURITY</span>
-        <h3 class="modal-title">관리자 비밀번호 변경</h3>
+        <span class="bar-label">SECURITY SETTINGS</span>
+        <h3 class="modal-title">보안 비밀번호 및 기관 설정</h3>
       </div>
       <form onsubmit="handleChangePassword(event)">
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>현재 비밀번호 *</label>
-          <input type="password" id="currPwInput" required>
+        <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-weight: 800; font-size: 13px; color: #0284c7; margin-bottom: 8px;">🏛️ 기관 보안 접속 설정</div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label>소속 기관명</label>
+            <input type="text" id="changeOrgNameInput" placeholder="예: OO노인복지관">
+          </div>
+          <div class="form-group">
+            <label>새 기관 보안 코드 (접속 즉시 요구되는 1차 암호)</label>
+            <input type="text" id="changeOrgCodeInput" placeholder="초기값: 2026" style="letter-spacing: 1px;">
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label>새 비밀번호 *</label>
-          <input type="password" id="newPwInput" required placeholder="새 비밀번호 입력">
+
+        <div style="background: #fefce8; border: 1.5px solid #fef08a; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
+          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;">🔒 직원 (관리자) 비밀번호 변경</div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label>현재 관리자 비밀번호 *</label>
+            <input type="password" id="currPwInput" required placeholder="기본값: 1234">
+          </div>
+          <div class="form-group" style="margin-bottom: 10px;">
+            <label>새 관리자 비밀번호 *</label>
+            <input type="password" id="newPwInput" required placeholder="새 관리자 비밀번호">
+          </div>
+          <div class="form-group">
+            <label>새 관리자 비밀번호 확인 *</label>
+            <input type="password" id="newPwConfirmInput" required placeholder="새 관리자 비밀번호 다시 입력">
+          </div>
         </div>
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label>새 비밀번호 확인 *</label>
-          <input type="password" id="newPwConfirmInput" required placeholder="새 비밀번호 다시 입력">
-        </div>
+
         <div style="display:flex; justify-content:flex-end; gap:10px;">
           <button type="button" class="btn" onclick="closeChangePasswordModal()">취소</button>
-          <button type="submit" class="btn btn-sora">비밀번호 변경</button>
+          <button type="submit" class="btn btn-sora">설정 저장</button>
         </div>
       </form>
     </div>
@@ -1557,11 +1767,16 @@
        1. DATA STRUCTURE & SAMPLE SEED DATA
        ========================================================================== */
     const STORAGE_KEY = 'SENIOR_ATTENDANCE_DATA_V4_TEST';
+    const ORG_SESSION_KEY = 'SENIOR_ATTENDANCE_ORG_AUTH_SESSION_V1';
 
-    // Default Password
-    const DEFAULT_ADMIN_PASSWORD = '1234';
+    // Default Security Passwords
+    const DEFAULT_ORG_NAME = '행복노인복지관';
+    const DEFAULT_ORG_SECURITY_CODE = '2026'; // 접속 즉시 기관 보안 로그인 암호
+    const DEFAULT_ADMIN_PASSWORD = '1234';    // 직원 (관리자) 암호
 
     const DEFAULT_DATA = {
+      orgName: DEFAULT_ORG_NAME,
+      orgSecurityCode: DEFAULT_ORG_SECURITY_CODE,
       adminPassword: DEFAULT_ADMIN_PASSWORD,
       activeProgramId: "prog_001",
       activeSessionId: "sess_003",
@@ -2003,8 +2218,95 @@
     }
 
     /* ==========================================================================
-       3. NAVIGATION & ADMIN LOGIN SECURITY
+       3. ORGANIZATION SECURITY GATEWAY & ADMIN NAVIGATION
        ========================================================================== */
+    function checkOrgGatewayAuth() {
+      const isOrgAuthenticated = sessionStorage.getItem(ORG_SESSION_KEY) === 'true';
+      const overlay = document.getElementById('orgGatewayOverlay');
+      const orgNameInput = document.getElementById('orgNameInput');
+
+      if (orgNameInput && appData && appData.orgName) {
+        orgNameInput.value = appData.orgName;
+      }
+      updateOrgBrandDisplay();
+
+      if (isOrgAuthenticated) {
+        overlay.classList.add('unlocked');
+      } else {
+        overlay.classList.remove('unlocked');
+        setTimeout(() => {
+          const codeInput = document.getElementById('orgSecurityCodeInput');
+          if (codeInput) {
+            codeInput.value = '';
+            codeInput.focus();
+          }
+        }, 150);
+      }
+    }
+
+    function handleOrgGatewayLogin(event) {
+      if (event) event.preventDefault();
+      const codeInput = document.getElementById('orgSecurityCodeInput');
+      const nameInput = document.getElementById('orgNameInput');
+      const enteredCode = (codeInput?.value || '').trim();
+      const enteredName = (nameInput?.value || '').trim() || DEFAULT_ORG_NAME;
+
+      const validCode = (appData && appData.orgSecurityCode) ? appData.orgSecurityCode : DEFAULT_ORG_SECURITY_CODE;
+
+      if (enteredCode === validCode) {
+        sessionStorage.setItem(ORG_SESSION_KEY, 'true');
+        if (appData) {
+          appData.orgName = enteredName;
+          saveData();
+        }
+        updateOrgBrandDisplay();
+        unlockOrgGateway();
+        showToast(`🏛️ ${enteredName} 보안 인증이 완료되었습니다.`);
+      } else {
+        alert('기관 보안 코드가 일치하지 않습니다. (초기 기본 코드: 2026)');
+        if (codeInput) {
+          codeInput.focus();
+          codeInput.select();
+        }
+      }
+    }
+
+    function unlockOrgGateway() {
+      const overlay = document.getElementById('orgGatewayOverlay');
+      if (overlay) {
+        overlay.classList.add('unlocked');
+      }
+    }
+
+    function lockOrgGateway() {
+      sessionStorage.removeItem(ORG_SESSION_KEY);
+      isAdminLoggedIn = false; // 관리자 모드도 함께 안전 로그아웃
+      switchRole('kiosk');
+      const overlay = document.getElementById('orgGatewayOverlay');
+      if (overlay) {
+        overlay.classList.remove('unlocked');
+        const codeInput = document.getElementById('orgSecurityCodeInput');
+        if (codeInput) {
+          codeInput.value = '';
+          codeInput.focus();
+        }
+      }
+      showToast('🔒 화면이 잠겼습니다. (기관 보안 인증 필요)');
+    }
+
+    function updateOrgBrandDisplay() {
+      const orgTitle = document.getElementById('headerOrgTitleDisplay');
+      const orgSub = document.getElementById('headerOrgSubDisplay');
+      const currentOrgName = (appData && appData.orgName) ? appData.orgName : DEFAULT_ORG_NAME;
+
+      if (orgTitle) {
+        orgTitle.textContent = `${currentOrgName} 전자출석부`;
+      }
+      if (orgSub) {
+        orgSub.textContent = `Senior Attendance System · ${currentOrgName} 배움터`;
+      }
+    }
+
     function switchRole(role) {
       currentRole = role;
       document.getElementById('tabKioskBtn').classList.toggle('active', role === 'kiosk');
@@ -2063,6 +2365,8 @@
     }
 
     function openChangePasswordModal() {
+      document.getElementById('changeOrgNameInput').value = appData.orgName || DEFAULT_ORG_NAME;
+      document.getElementById('changeOrgCodeInput').value = appData.orgSecurityCode || DEFAULT_ORG_SECURITY_CODE;
       document.getElementById('currPwInput').value = '';
       document.getElementById('newPwInput').value = '';
       document.getElementById('newPwConfirmInput').value = '';
@@ -2075,28 +2379,36 @@
 
     function handleChangePassword(event) {
       event.preventDefault();
+      const newOrgName = document.getElementById('changeOrgNameInput').value.trim();
+      const newOrgCode = document.getElementById('changeOrgCodeInput').value.trim();
       const curr = document.getElementById('currPwInput').value;
       const newPw = document.getElementById('newPwInput').value;
       const confirmPw = document.getElementById('newPwConfirmInput').value;
       const actualCurr = appData.adminPassword || DEFAULT_ADMIN_PASSWORD;
 
       if (curr !== actualCurr) {
-        alert('현재 비밀번호가 일치하지 않습니다.');
+        alert('현재 관리자 비밀번호가 일치하지 않습니다.');
         return;
       }
-      if (!newPw) {
-        alert('새 비밀번호를 입력해 주세요.');
-        return;
-      }
-      if (newPw !== confirmPw) {
-        alert('새 비밀번호 확인이 일치하지 않습니다.');
+      if (newPw && newPw !== confirmPw) {
+        alert('새 관리자 비밀번호 확인이 일치하지 않습니다.');
         return;
       }
 
-      appData.adminPassword = newPw;
+      if (newOrgName) {
+        appData.orgName = newOrgName;
+      }
+      if (newOrgCode) {
+        appData.orgSecurityCode = newOrgCode;
+      }
+      if (newPw) {
+        appData.adminPassword = newPw;
+      }
+
       saveData();
+      updateOrgBrandDisplay();
       closeChangePasswordModal();
-      showToast('관리자 비밀번호가 성공적으로 변경되었습니다.');
+      showToast('보안 설정 및 비밀번호가 안전하게 변경되었습니다.');
     }
 
     function switchAdminTab(subtab) {
@@ -3356,6 +3668,7 @@
 
     async function initApp() {
       await loadData();
+      checkOrgGatewayAuth(); // 🏛️ 접속 즉시 기관 보안 로그인 상태 확인
       populateGlobalSelectors();
       initSignatureCanvas();
       switchRole('kiosk');
@@ -3368,6 +3681,7 @@
             appData = cloudData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             initAppUI();
+            checkOrgGatewayAuth();
             showToast('⚡ Supabase 클라우드와 실시간 연결되었습니다.');
           } else {
             // 클라우드에 아직 데이터가 없으면 현재 데이터로 최초 시드 업로드
@@ -3379,6 +3693,7 @@
     }
 
     function initAppUI() {
+      updateOrgBrandDisplay();
       populateGlobalSelectors();
       renderCurrentView();
     }

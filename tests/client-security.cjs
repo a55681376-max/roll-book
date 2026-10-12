@@ -7,7 +7,7 @@ function node(id='generated-'+serial++){
  const n={id,value:'',checked:true,style:{},textContent:'',innerHTML:'',children:[],classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x),toggle:(x,v)=>{v??=!classes.has(x);v?classes.add(x):classes.delete(x);}},focus(){},appendChild(x){this.children.push(x);},getAttribute(){return '';},getContext(){return new Proxy({}, {get:()=>()=>{}});},toDataURL(){return 'data:image/png;base64,test';}};
  nodes.set(id,n);return n;
 }
-const tabs=['Program','Participants','Attendance','Print','Master'].map(x=>node('subtabBtn'+x));
+const tabs=['Program','Participants','Attendance','Print','Account','Master'].map(x=>node('subtabBtn'+x));
 const panels=['entryView','kioskView','adminView'].map(node);let alerts=[];
 const ctx={console,setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},alert:x=>alerts.push(x),confirm:()=>true,window:{addEventListener(){},print(){}},document:{getElementById:node,createElement:()=>node(),querySelector:()=>null,querySelectorAll:q=>q==='.admin-subtab-btn'?tabs:q.includes('.view-panel')?panels.filter(n=>!q.includes(':not')||n.id!=='entryView'):[]},localStorage:{getItem:()=>null,setItem(){throw Error('Private state must not be cached');},removeItem(){}},Date};
 vm.createContext(ctx);vm.runInContext(fs.readFileSync('tools/preview-api.js','utf8'),ctx);vm.runInContext(code,ctx);
@@ -33,6 +33,20 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  await run('saveAdminAccount({preventDefault(){}})');assert.equal(run("appData.generalAdmins.find(a=>a.username==='staff2').memo"),'미술 담당');
  assert.equal(run("appData.generalAdmins.find(a=>a.username==='staff2').password"),undefined);
  await run('logoutAdmin()');await run("login('general','staff2','staff-pass','management')");
+ run("switchAdminTab('account')");assert.equal(run('currentAdminTab'),'account');assert.equal(node('staffAccountUsername').value,'staff2');assert.equal(node('adminProgramSubtab').style.display,'none');
+ node('currPwInput').value='wrong';node('newPwInput').value='staff-new';node('newPwConfirmInput').value='staff-new';
+ await run('handleChangePassword({preventDefault(){}})');assert(alerts.at(-1).includes('비밀번호'));
+ node('currPwInput').value='staff-pass';await run('handleChangePassword({preventDefault(){}})');assert.equal(node('currPwInput').value,'');
+ await run('logoutAdmin()');await run("login('general','staff2','staff-new','management')");assert.equal(run('currentRole'),'admin');
+ const calendars=JSON.parse(fs.readFileSync('tests/fixtures/korean-holidays.json','utf8'));ctx.testCalendars=calendars;
+ const schedule=await run("buildHolidaySchedule({startDate:'2026-10-02',totalSessions:2,daysOfWeek:[5],sessions:[],records:{}},async y=>testCalendars[y])");
+ assert.deepEqual(Array.from(schedule,s=>[s.date,s.round,s.isHoliday]),[['2026-10-02',1,false],['2026-10-09',0,true],['2026-10-16',2,false]]);
+ assert.equal(schedule[1].publicHoliday,'한글날');
+ const substitute=await run("buildHolidaySchedule({startDate:'2026-10-05',totalSessions:1,daysOfWeek:[1],sessions:[]},async y=>testCalendars[y])");assert(substitute[0].publicHoliday.includes('대체공휴일'));
+ const sunday=await run("buildHolidaySchedule({startDate:'2026-10-11',totalSessions:1,daysOfWeek:[0],sessions:[]},async y=>testCalendars[y])");assert.equal(sunday[0].isHoliday,false);
+ const yearBoundary=await run("buildHolidaySchedule({startDate:'2026-12-25',totalSessions:1,daysOfWeek:[5],sessions:[]},async y=>testCalendars[y])");assert.equal(yearBoundary.at(-1).date,'2027-01-08');
+ await assert.rejects(run("buildHolidaySchedule({startDate:'2026-10-09',totalSessions:1,daysOfWeek:[5],sessions:[{id:'old',date:'2026-10-09',round:1}],records:{participant_old:{status:'attended'}}},async y=>testCalendars[y])"),/출석 기록/);
+ const retained=await run("buildHolidaySchedule({startDate:'2026-10-16',totalSessions:1,daysOfWeek:[5],sessions:[{id:'old',date:'2026-10-16',round:1,note:'기존 메모'}],records:{participant_old:{status:'attended'}}},async y=>testCalendars[y])");assert.equal(retained[0].id,'old');assert.equal(retained[0].note,'기존 메모');
  node('printScopeType').value='all';node('printSessionsPerPage').value='6';node('printOrientation').value='portrait';
  run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 portrait'));
  const page=node('a4PagesContainer').children[0];assert(page.className.includes('a4-portrait-page'));assert(page.innerHTML.includes('테스트 프로그램 출석부'));assert(!page.innerHTML.includes('* 비고:'));
@@ -48,5 +62,5 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
  assert(!html.includes(".from(SUPABASE_TABLE_NAME)"));assert(!html.includes('master1234'));assert(!html.includes('sb_secret_')||html.includes("key.startsWith('sb_secret_')"));
  assert(!html.includes('SESSION SCHEDULE'));assert(!html.includes('회원번호는 필수 항목'));assert(!html.includes('서명 돕기'));
- console.log('PASS: server API login, no cached private data, role separation, account changes, masked passwords, portrait/landscape, logout, unique IDs');
+ console.log('PASS: secure login, account tab/password, holiday/substitute/weekend/year-boundary scheduling, attendance preservation, printing, unique IDs');
 })().catch(e=>{console.error(e);process.exitCode=1;});

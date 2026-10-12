@@ -625,6 +625,7 @@
 
     .admin-subtab-group {
       display: flex;
+      flex-wrap: wrap;
       gap: 8px;
     }
 
@@ -1104,7 +1105,6 @@
           </div>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-sm" id="accountPasswordButton" onclick="openChangePasswordModal()">비밀번호 변경</button>
           <button class="btn btn-sm btn-danger" id="settingsLogoutButton" onclick="logoutAdmin()">로그아웃</button>
         </div>
       </div>
@@ -1117,6 +1117,7 @@
           <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">출석 관리</button>
           <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button><button class="admin-subtab-btn hidden" id="subtabBtnMaster" onclick="switchAdminTab('master')">설정</button>
         </div>
+        <button class="admin-subtab-btn" id="subtabBtnAccount" onclick="switchAdminTab('account')">담당자 계정 관리</button>
       </div>
 
       <!-- SUBTAB 1: PROGRAM MANAGEMENT -->
@@ -1189,12 +1190,12 @@
               <h3 class="card-title">회차 관리</h3>
             </div>
             <div style="display:flex; gap:8px;">
-              <button class="btn btn-sm btn-sora" onclick="regenerateSessionsByRule()">요일 기준 회차 자동 재생성</button>
+              <button class="btn btn-sm btn-sora" id="regenerateSessionsButton" onclick="regenerateSessionsByRule()">요일 기준 회차 자동 재생성</button>
               <button class="btn btn-sm" onclick="addNewSessionRow()">+ 회차 추가</button>
             </div>
           </div>
           <p style="font-size: 13px; color: var(--color-pencil-gray); margin-bottom: 12px; font-weight: 500;">
-            * <strong>휴강일</strong>로 지정된 회차는 실제 운영 회차에서 제외되며, <strong>출석률 계산에서도 자동 제외</strong>됩니다.
+            프로그램 정보를 저장한 뒤 자동 재생성을 눌러 주세요. 공휴일은 자동 휴강으로 지정하며, 휴강일은 수업 회차와 출석률 계산에서 제외합니다.
           </p>
 
           <div id="sessionListGrid" class="session-list-grid">
@@ -1364,6 +1365,20 @@
         </div>
       </div>
 
+      <div id="adminAccountSubtab" class="admin-subtab-content" style="display:none;">
+        <div class="card" style="max-width:640px;">
+          <h3 class="card-title" style="margin-bottom:16px;">담당자 계정 관리</h3>
+          <div class="form-group"><label for="staffAccountUsername">아이디</label><input id="staffAccountUsername" type="text" readonly></div>
+          <form onsubmit="handleChangePassword(event)" style="display:grid;gap:12px;">
+            <h4 style="margin:20px 0 16px;">비밀번호 변경</h4>
+            <div class="form-group"><label for="currPwInput">현재 비밀번호</label><input type="password" id="currPwInput" required autocomplete="current-password"></div>
+            <div class="form-group"><label for="newPwInput">새 비밀번호</label><input type="password" id="newPwInput" required minlength="4" maxlength="72" autocomplete="new-password" placeholder="4자 이상 입력해 주세요"></div>
+            <div class="form-group"><label for="newPwConfirmInput">새 비밀번호 확인</label><input type="password" id="newPwConfirmInput" required minlength="4" maxlength="72" autocomplete="new-password"></div>
+            <button type="submit" class="btn btn-sora" style="justify-self:start;">비밀번호 변경</button>
+          </form>
+        </div>
+      </div>
+
       <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
 
@@ -1475,37 +1490,6 @@
         <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
           <button type="button" class="btn" onclick="closeAdminLoginModal()">취소</button>
           <button type="submit" class="btn btn-sora">로그인</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Modal 0-1: Change Admin & Org Password Modal (비밀번호 변경) -->
-  <div id="changePasswordModal" class="modal-overlay hidden">
-    <div class="modal-content" style="max-width: 480px;">
-      <div class="modal-header">
-        <h3 class="modal-title">비밀번호 변경</h3>
-      </div>
-      <form onsubmit="handleChangePassword(event)">
-        <div style="background: #fefce8; border: 1.5px solid #fef08a; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
-          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;"> 담당자 비밀번호 변경</div>
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label for="currPwInput">현재 비밀번호 (필수)</label>
-            <input type="password" id="currPwInput" required placeholder="기본값: 1234">
-          </div>
-          <div class="form-group" style="margin-bottom: 10px;">
-            <label for="newPwInput">새 비밀번호 (필수)</label>
-            <input type="password" id="newPwInput" required placeholder="새 비밀번호">
-          </div>
-          <div class="form-group">
-            <label for="newPwConfirmInput">새 비밀번호 확인 (필수)</label>
-            <input type="password" id="newPwConfirmInput" required placeholder="새 비밀번호 다시 입력">
-          </div>
-        </div>
-
-        <div style="display:flex; justify-content:flex-end; gap:10px;">
-          <button type="button" class="btn" onclick="closeChangePasswordModal()">취소</button>
-          <button type="submit" class="btn btn-sora">설정 저장</button>
         </div>
       </form>
     </div>
@@ -1887,6 +1871,7 @@
     let cloudToken = '';
     let securePollTimer = null;
     let saveQueue = Promise.resolve();
+    let pendingScheduleGeneration = false;
     let pendingCloudSaves = 0;
     let cloudSaveFailed = false;
     async function secureRequest(action, body = {}, token = cloudToken) {
@@ -1995,7 +1980,7 @@
     function setupRealtimeSubscription() {
       if (securePollTimer) clearInterval(securePollTimer);
       securePollTimer = setInterval(async () => {
-        if (!cloudToken || pendingCloudSaves || cloudSaveFailed || currentRole === 'entry' || document.querySelector('.modal-overlay:not(.hidden)')) return;
+        if (!cloudToken || pendingCloudSaves || pendingScheduleGeneration || cloudSaveFailed || currentRole === 'entry' || document.querySelector('.modal-overlay:not(.hidden)')) return;
         try {
           const data = await fetchFromSupabase();
           if (data && data._revision !== appData._revision) {
@@ -2117,7 +2102,9 @@
       isAdminLoggedIn = false;
       currentAdminUser = null;
       currentAdminRole = 'general';
-      ['adminAccountModal', 'changePasswordModal'].forEach(id => document.getElementById(id).classList.add('hidden'));
+      document.getElementById('adminAccountModal').classList.add('hidden');
+      document.getElementById('staffAccountUsername').value = '';
+      clearStaffPasswordFields();
     }
 
     function showEntryScreen() {
@@ -2201,7 +2188,6 @@
       document.getElementById('adminRoleIcon').innerHTML = master ? '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></svg>' : '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>';
       document.getElementById('adminRoleNameDisplay').textContent = master ? '관리자' : '담당자';
       document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.style.display = (btn.id === 'subtabBtnMaster') === master ? 'inline-block' : 'none');
-      document.getElementById('accountPasswordButton').classList.toggle('hidden', master);
       document.getElementById('settingsLogoutButton').classList.toggle('hidden', !master);
     }
 
@@ -2215,22 +2201,16 @@
       if (token) {try {await secureRequest('logout',{},token);} catch (_) {}}
     }
 
-    function openChangePasswordModal() {
-      if (!isAdminLoggedIn) return;
+    function clearStaffPasswordFields() {
       ['currPwInput', 'newPwInput', 'newPwConfirmInput'].forEach(id => document.getElementById(id).value = '');
-      document.getElementById('changePasswordModal').classList.remove('hidden');
-    }
-
-    function closeChangePasswordModal() {
-      document.getElementById('changePasswordModal').classList.add('hidden');
     }
 
     async function handleChangePassword(event) {
-      event.preventDefault(); if (!isAdminLoggedIn) return;
+      event.preventDefault(); if (!isAdminLoggedIn || currentAdminRole !== 'general') return;
       const current=document.getElementById('currPwInput').value;
       const password=document.getElementById('newPwInput').value;
       if (password!==document.getElementById('newPwConfirmInput').value) return alert('새 비밀번호와 확인란을 똑같이 입력해 주세요.');
-      try {await secureRequest('change_password',{current,password});closeChangePasswordModal();showToast('비밀번호를 변경했습니다.');}
+      try {await secureRequest('change_password',{current,password});clearStaffPasswordFields();showToast('비밀번호를 변경했습니다.');}
       catch (err) {alert(err.message);}
     }
 
@@ -2246,6 +2226,9 @@
       document.getElementById('adminParticipantsSubtab').style.display = (subtab === 'participants') ? 'block' : 'none';
       document.getElementById('adminAttendanceSubtab').style.display = (subtab === 'attendance') ? 'block' : 'none';
       document.getElementById('adminPrintSubtab').style.display = (subtab === 'print') ? 'block' : 'none';
+      document.getElementById('adminAccountSubtab').style.display = (subtab === 'account') ? 'block' : 'none';
+      clearStaffPasswordFields();
+      document.getElementById('staffAccountUsername').value = subtab === 'account' ? (currentAdminUser?.username || '') : '';
 
       const masterSubtab = document.getElementById('adminMasterSubtab');
       if (masterSubtab) {
@@ -2848,6 +2831,7 @@
             <input type="text" value="${escapeHtml(s.note || '')}" placeholder="교육 내용/비고" style="font-size:12px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'note', this.value)">
           </div>
           <div>
+            ${s.publicHoliday ? `<p style="font-size:12px; color:var(--color-danger); margin:0 0 6px;">${escapeHtml(s.publicHoliday)}</p>` : ''}
             <label class="checkbox-label" style="font-size:12px; color:var(--color-pencil-gray);">
               <input type="checkbox" ${s.isHoliday ? 'checked' : ''} onchange="toggleSessionHoliday(${idx}, this.checked)">
               휴강 지정
@@ -2934,42 +2918,68 @@
       }
     }
 
-    function regenerateSessionsByRule() {
-      const prog = getCurrentProgram();
-      if (!prog) return;
-      if (!confirm('설정된 시작일, 요일, 총 회차수에 맞춰 전체 회차 일정을 자동으로 재생성하시겠습니까?')) return;
-
-      const startDate = new Date(prog.startDate);
-      const total = parseInt(prog.totalSessions) || 8;
-      const days = (prog.daysOfWeek && prog.daysOfWeek.length > 0) ? prog.daysOfWeek : [1];
-
-      const newSessions = [];
-      let currentDate = new Date(startDate);
-      let createdRounds = 0;
-      let safeguard = 0;
-
-      while (createdRounds < total && safeguard < 200) {
-        safeguard++;
-        const dayOfWeek = currentDate.getDay();
-        if (days.includes(dayOfWeek)) {
-          createdRounds++;
-          newSessions.push({
-            id: 'sess_' + Date.now() + '_' + createdRounds,
-            round: createdRounds,
-            date: currentDate.toISOString().slice(0, 10),
-            isHoliday: false,
-            note: `${createdRounds}회차 교육`
-          });
-        }
-        currentDate.setDate(currentDate.getDate() + 1);
+    async function buildHolidaySchedule(prog, getHolidays) {
+      const currentDate = new Date(prog.startDate + 'T00:00:00Z');
+      const total = Number(prog.totalSessions) || 8;
+      const days = [...new Set(prog.daysOfWeek?.length ? prog.daysOfWeek : [1])];
+      if (!Number.isFinite(currentDate.getTime()) || total < 1 || total > 50 || !days.every(d => Number.isInteger(d) && d >= 0 && d <= 6)) throw new Error('시작일, 요일, 총 회차를 확인해 주세요.');
+      const calendars = new Map(), sessions = [];
+      let rounds = 0;
+      for (let scan=0; scan<730 && rounds<total; scan++, currentDate.setUTCDate(currentDate.getUTCDate()+1)) {
+        if (!days.includes(currentDate.getUTCDay())) continue;
+        const year = currentDate.getUTCFullYear();
+        if (!calendars.has(year)) calendars.set(year, await getHolidays(year));
+        const date = currentDate.toISOString().slice(0,10);
+        const names = calendars.get(year)[date] || [];
+        const old = prog.sessions?.find(s => s.date === date);
+        const manualHoliday = !!old?.isHoliday && !old?.publicHoliday;
+        const isHoliday = names.length > 0 || manualHoliday;
+        const round = isHoliday ? 0 : ++rounds;
+        sessions.push({...(old || {}), id:old?.id || `sess_${Date.now()}_${sessions.length}`, date, round, isHoliday, publicHoliday:names.join(', '), note:old?.note || ''});
       }
+      if (rounds !== total) throw new Error('총 회차에 맞는 일정을 만들지 못했습니다. 요일과 회차를 확인해 주세요.');
+      for (const old of prog.sessions || []) {
+        const hasRecord = Object.keys(prog.records || {}).some(key => key.endsWith('_' + old.id));
+        const replacement = sessions.find(s => s.id === old.id);
+        if (hasRecord && (!replacement || replacement.isHoliday || replacement.round !== old.round)) throw new Error('출석 기록이 있는 회차가 변경되어 자동 재생성을 멈췄습니다. 회차 관리에서 일정을 직접 수정해 주세요.');
+      }
+      return sessions;
+    }
 
-      prog.sessions = newSessions;
-      saveData();
-      renderSessionScheduleCards();
-      populateSessionSelector();
-      updateProgramSummaryBadge();
-      showToast(`${total}개 회차 일정이 자동 생성되었습니다.`);
+    async function fetchKoreanHolidays(year) {
+      const response = await fetch(`/.netlify/functions/korean-holidays?year=${year}`, {signal:AbortSignal.timeout(15000)});
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || '공휴일 자료를 확인하지 못했습니다. 기존 일정은 유지됩니다.');
+      if (result.year !== year || !result.holidays || Object.keys(result.holidays).length < 10) throw new Error('공휴일 자료가 올바르지 않습니다. 기존 일정은 유지됩니다.');
+      return result.holidays;
+    }
+
+    async function regenerateSessionsByRule() {
+      const prog = getCurrentProgram();
+      if (!prog || !isAdminLoggedIn || currentAdminRole !== 'general' || pendingScheduleGeneration) return;
+      const selectedDays = [...document.querySelectorAll('#progDayCheckboxes input:checked')].map(cb => Number(cb.value)).sort();
+      if (document.getElementById('progStartDate').value !== prog.startDate || Number(document.getElementById('progTotalSessions').value) !== Number(prog.totalSessions) || JSON.stringify(selectedDays) !== JSON.stringify([...(prog.daysOfWeek || [])].sort())) return alert('시작일, 요일, 총 회차를 변경했다면 프로그램 정보를 먼저 저장해 주세요.');
+      const button = document.getElementById('regenerateSessionsButton');
+      const token = cloudToken;
+      pendingScheduleGeneration = true; button.disabled = true; button.textContent = '공휴일 확인 중…';
+      try {
+        await saveQueue;
+        if (cloudSaveFailed) throw new Error('저장 오류가 있어 일정을 변경하지 않았습니다. 새로고침 후 다시 시도해 주세요.');
+        const snapshot = JSON.stringify(prog);
+        const sessions = await buildHolidaySchedule(prog, fetchKoreanHolidays);
+        if (token !== cloudToken || !isAdminLoggedIn || getCurrentProgram() !== prog) return;
+        if (snapshot !== JSON.stringify(prog)) throw new Error('확인 중 프로그램 정보가 바뀌었습니다. 다시 시도해 주세요.');
+        const holidays = sessions.filter(s => s.isHoliday).length;
+        const lastDate = sessions.at(-1).date;
+        if (!confirm(`수업 ${sessions.length-holidays}회, 휴강 ${holidays}일로 일정을 다시 만듭니다.\n마지막 수업: ${lastDate}\n공휴일은 자동 휴강 처리합니다. 진행할까요?`)) return;
+        prog.sessions = sessions;
+        if (lastDate > prog.endDate) {prog.endDate=lastDate;document.getElementById('progEndDate').value=lastDate;}
+        await saveData();
+        if (cloudSaveFailed) return;
+        renderSessionScheduleCards(); populateSessionSelector(); updateProgramSummaryBadge();
+        showToast(`수업 ${sessions.length-holidays}회와 휴강 ${holidays}일을 저장했습니다.`);
+      } catch (err) {alert(err.name === 'TimeoutError' || err instanceof SyntaxError || err instanceof TypeError ? '공휴일 자료를 확인하지 못했습니다. 기존 일정은 유지됩니다.' : err.message);}
+      finally {pendingScheduleGeneration=false;button.disabled=false;button.textContent='요일 기준 회차 자동 재생성';}
     }
 
     function saveCurrentProgram(event) {

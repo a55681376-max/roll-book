@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>노인복지관 배움터 전자출석부</title>
+  <title>전자출석부</title>
   <!-- SheetJS CDN for 엑셀 parsing -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
   <!-- Supabase JS Client v2 CDN -->
@@ -14,6 +14,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;500;700;800;900&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
 
   <style>
+    .line-icon { flex-shrink:0; vertical-align:middle; color:var(--color-sora); }
+    .btn-sora .line-icon { color:#fff; }
+    .kiosk-mascot-art { color:var(--color-sora); }
     .attendance-icon { display:flex; align-items:center; justify-content:center; width:48px; height:48px; color:#111; flex-shrink:0; }
     .hidden { display: none !important; }
     /* ==========================================================================
@@ -935,6 +938,23 @@
         page-break-after: always;
       }
     }
+    @media screen and (max-width: 700px) {
+      header.site-header { flex-wrap:wrap; gap:12px; padding:12px 16px; position:relative; }
+      .brand-area { flex:1 0 100%; }
+      .brand-text h1 { white-space:nowrap; }
+      .role-tabs { width:100%; flex-wrap:wrap; }
+      .role-btn { flex:1; padding:9px 10px; white-space:nowrap; }
+      main.main-content { padding:16px; }
+      .program-selector-group { width:100%; min-width:0; }
+      .program-selector-group select { width:100%; min-width:0; }
+      .kiosk-hero { flex-wrap:wrap; padding:20px; }
+      .kiosk-hero-text { width:100%; min-width:0; }
+      .kiosk-instruction { font-size:28px; overflow-wrap:anywhere; }
+      .kiosk-search-box { flex-wrap:wrap; }
+      .kiosk-search-box input { width:100%; min-width:0; }
+      .kiosk-mascot-art { display:none; }
+      .header-actions { flex-wrap:wrap; }
+    }
   </style>
 </head>
 <body>
@@ -957,25 +977,14 @@
     <!-- Role Switching Tabs (강사 삭제, 참여자 출석 & 관리자 로그인만) -->
     <div class="role-tabs hidden" id="roleNavigation">
       <button class="role-btn active" id="tabKioskBtn" onclick="switchRole('kiosk')">
-        <span>✍️</span> 참여자 출석
+        <svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m14 4 6 6-10 10-7 1 1-7Z M12 6l6 6"/></svg> 참여자 출석
       </button>
       <button class="role-btn" id="tabAdminBtn" onclick="tryEnterAdminMode()">
-        <span>🔒</span> 담당자
+        <svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg> 담당자
       </button>
       <button class="role-btn" onclick="logoutAdmin()">로그아웃</button>
     </div>
 
-    <!-- Header Actions -->
-    <div class="header-actions hidden" id="headerTools">
-      <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
-        <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
-        <span>⚡ Supabase</span>
-      </button>
-      <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
-      <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
-      <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
-      <button class="btn btn-sm btn-danger" onclick="resetToSampleData()" title="초기 데이터 복원">초기화</button>
-    </div>
   </header>
 
   <!-- Global Program Selector Bar -->
@@ -1015,12 +1024,11 @@
     <section id="kioskView" class="view-panel">
       <div class="kiosk-hero">
         <div class="kiosk-hero-text">
-          <div class="hero-badge">📖 행복한 배움터 출석체크</div>
           <h2 class="kiosk-instruction" id="kioskTitleHeading">
-            어르신, <span class="accent-sora">성함을 누르고</span> 전자서명을 해 주세요!
+            참여자 출석
           </h2>
           <p class="kiosk-subtext" id="kioskSubtitle">
-            오늘도 즐거운 배움의 날입니다. 본인 이름을 누르시면 큰 서명창이 열립니다.
+            환영합니다! 본인의 이름을 누르고 서명해 주세요.
           </p>
 
           <div class="kiosk-search-box">
@@ -1031,7 +1039,7 @@
 
         <!-- 동글동글 통통한 책 & 연필 귀여운 이모티콘 -->
         <div class="kiosk-mascot-art" title="배움터 책과 연필">
-          <span>📚</span><span>✏️</span>
+          <svg class="line-icon" width="96" height="96" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2"/><rect x="9" y="2" width="6" height="4" rx="1"/><path d="m8 11 1 1 2-2M13 11h3m-8 6 1 1 2-2m2 1h3"/></svg>
         </div>
       </div>
 
@@ -1048,7 +1056,7 @@
       <!-- Admin Top Status & Logout -->
       <div class="card" style="padding: 14px 22px; margin-bottom: 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
-          <span style="font-size:22px;" id="adminRoleIcon">🛡️</span>
+          <span style="font-size:22px;" id="adminRoleIcon"></span>
           <div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-weight:900; color:var(--color-charcoal);" id="adminRoleNameDisplay">관리자 인증됨</span>
@@ -1071,8 +1079,7 @@
           <button class="admin-subtab-btn active" id="subtabBtnProgram" onclick="switchAdminTab('program')">프로그램 관리</button>
           <button class="admin-subtab-btn" id="subtabBtnParticipants" onclick="switchAdminTab('participants')">참여자 관리</button>
           <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">출석 관리</button>
-          <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button>
-          <button class="admin-subtab-btn" id="subtabBtnMaster" onclick="switchAdminTab('master')" style="display:none; background:#fef3c7; color:#92400e; border-color:#fcd34d;">설정</button>
+          <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button><button class="admin-subtab-btn hidden" id="subtabBtnMaster" onclick="switchAdminTab('master')">설정</button>
         </div>
       </div>
 
@@ -1176,7 +1183,7 @@
           </div>
 
           <div style="margin-bottom: 14px; font-size: 13px; color: var(--color-pencil-gray); font-weight: 500;">
-            * 회원번호는 필수 항목이 아닙니다. 비회원 어르신 및 중장년 참여자도 등록 가능합니다.<br>
+            * 회원번호는 필수 항목이 아닙니다. 비회원 참여자 및 중장년 참여자도 등록 가능합니다.<br>
             * 동명이인이 존재하는 경우 출석 화면에 회원번호가 자동으로 함께 표기되어 구분됩니다.
           </div>
 
@@ -1261,7 +1268,7 @@
             <div>
               <h3 class="card-title">인쇄</h3>
             </div>
-            <button class="btn btn-sora btn-lg" onclick="triggerPrint()">🖨️ A4 출석부 바로 인쇄 / PDF 저장</button>
+            <button class="btn btn-sora btn-lg" onclick="triggerPrint()"><svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 8V3h10v5M7 17H4V8h16v9h-3"/><path d="M7 14h10v7H7Zm10-3h.01"/></svg> 인쇄 / PDF 저장</button>
           </div>
 
           <div class="print-options-bar">
@@ -1322,11 +1329,21 @@
       <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
 
+<div class="card" style="margin-top:24px;margin-bottom:24px;"><h3 class="card-title">데이터 관리</h3><p style="margin:12px 0;">데이터 연결과 파일 보관</p>
+    <div class="header-actions" id="headerTools">
+      <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
+        <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
+        <svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 18a4 4 0 1 1 0-8 6 6 0 0 1 12-1 4.5 4.5 0 0 1 0 9Z"/></svg><span>연결 설정</span>
+      </button>
+      <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
+      <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
+      <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
+    </div>
+</div>
         <!-- 2. 담당자 계정 목록 및 등록/수정 카드 -->
         <div class="card" style="margin-bottom: 24px;">
           <div class="card-header">
             <div>
-              <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">설정</span>
               <h3 class="card-title">담당자 계정 목록</h3>
             </div>
             <button class="btn btn-sora btn-sm" onclick="openAdminAccountModal()">+ 새 담당자 등록</button>
@@ -1396,8 +1413,8 @@
   <!-- Modal 0: Admin Login Modal (관리자 / 담당자 구분 로그인) -->
   <div id="adminLoginModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 460px; text-align: center;">
-      <div style="font-size: 46px; margin-bottom: 8px;">🛡️</div>
-      <span class="hero-badge" id="adminLoginBadge">관리자 인증</span>
+      <div style="margin-bottom:12px;color:var(--color-sora-deep);"><svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></svg></div>
+      <span class="hero-badge hidden" id="adminLoginBadge">관리자 인증</span>
       <h3 id="loginTitle" style="font-family: var(--font-family-display); font-size: 24px; font-weight: 900; margin: 10px 0 6px 0;">
         관리자 모드 로그인
       </h3>
@@ -1430,12 +1447,11 @@
   <div id="changePasswordModal" class="modal-overlay hidden">
     <div class="modal-content" style="max-width: 480px;">
       <div class="modal-header">
-        <span class="bar-label">설정</span>
         <h3 class="modal-title">비밀번호 변경</h3>
       </div>
       <form onsubmit="handleChangePassword(event)">
         <div style="background: #fefce8; border: 1.5px solid #fef08a; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
-          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;">🔒 담당자 비밀번호 변경</div>
+          <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;"> 담당자 비밀번호 변경</div>
           <div class="form-group" style="margin-bottom: 10px;">
             <label for="currPwInput">현재 비밀번호 *</label>
             <input type="password" id="currPwInput" required placeholder="기본값: 1234">
@@ -1461,7 +1477,7 @@
   <!-- Modal 1: Participant Identity Confirmation Modal (본인 확인) -->
   <div id="confirmNameModal" class="modal-overlay hidden">
     <div class="modal-content" style="text-align: center; max-width: 460px;">
-      <div style="font-size: 48px; margin-bottom: 8px;">✏️</div>
+      <div style="margin-bottom:12px;color:var(--color-sora-deep);"><svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg></div>
       <span class="hero-badge">본인 확인</span>
       <h3 style="font-family: var(--font-family-display); font-size: 34px; font-weight: 900; margin: 14px 0; color: var(--color-charcoal);" id="confirmTargetName">홍길동</h3>
       <p style="font-size: 19px; color: var(--color-pencil-gray); font-weight: 600; margin-bottom: 24px;">
@@ -1478,8 +1494,7 @@
   <div id="signatureModal" class="modal-overlay hidden">
     <div class="modal-content">
       <div class="modal-header">
-        <span class="hero-badge">전자서명</span>
-        <h3 class="modal-title"><span id="sigModalParticipantName" style="color:var(--color-sora-deep);">홍길동</span> 어르신 서명</h3>
+        <h3 class="modal-title"><span id="sigModalParticipantName" style="color:var(--color-sora-deep);">홍길동</span> 님 서명</h3>
         <p style="font-size: 14px; color: var(--color-pencil-gray); font-weight: 600; margin-top: 4px;">
           아래 네모 상자 안에 손가락이나 펜으로 이름을 정성껏 적어주세요.
         </p>
@@ -1487,7 +1502,7 @@
 
       <div class="signature-wrap">
         <canvas id="sigCanvas"></canvas>
-        <div id="sigGuideText" class="sig-guide-text">여기에 서명해 주세요 ✍️</div>
+        <div id="sigGuideText" class="sig-guide-text">여기에 서명해 주세요 </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 16px;">
@@ -1601,7 +1616,7 @@
     <div class="modal-content" style="max-width: 580px;">
       <div class="modal-header">
         <span class="bar-label" style="background:#e0f2fe; color:#0284c7;">클라우드 데이터베이스</span>
-        <h3 class="modal-title">⚡ 수파베이스 (Supabase) 연동 설정</h3>
+        <h3 class="modal-title"> 수파베이스 (Supabase) 연동 설정</h3>
       </div>
       <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 16px;">
         수파베이스를 연결하면 여러 PC, 태블릿, 스마트폰에서 <strong>실시간 출석 데이터가 공유 및 영구 보관</strong>됩니다.
@@ -1625,7 +1640,7 @@
       </div>
 
       <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
-        <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 4px;">💡 Supabase 테이블 설정 팁</div>
+        <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 4px;"> Supabase 테이블 설정 팁</div>
         <div style="font-size: 12px; color: #64748b; line-height: 1.4;">
           프로젝트 폴더 내 <code>supabase_schema.sql</code> 파일을 Supabase SQL Editor에서 실행하시면 테이블 및 RLS 설정이 3초 만에 완료됩니다.
         </div>
@@ -1732,7 +1747,7 @@
             { id: "sess_009", round: 8, date: "2026-09-18", isHoliday: false, note: "종강식 및 수료" }
           ],
           participants: [
-            { id: "p01", name: "홍길동", memberId: "2026-0001", phone: "010-1234-5678", note: "우수 참여 어르신", isDropped: false, droppedSession: null },
+            { id: "p01", name: "홍길동", memberId: "2026-0001", phone: "010-1234-5678", note: "우수 참여 참여자", isDropped: false, droppedSession: null },
             { id: "p02", name: "홍길동", memberId: "2026-0002", phone: "010-2345-6789", note: "동명이인 테스트", isDropped: false, droppedSession: null },
             { id: "p03", name: "김철수", memberId: "2026-0003", phone: "010-3456-7890", note: "스마트폰 기초반", isDropped: false, droppedSession: null },
             { id: "p04", name: "이영희", memberId: "2026-0004", phone: "010-4567-8901", note: "", isDropped: false, droppedSession: null },
@@ -1914,11 +1929,11 @@
         if (connected) {
           notice.style.background = '#ecfdf5';
           notice.style.color = '#065f46';
-          notice.innerHTML = `✅ <strong>연결 성공:</strong> 클라우드 실시간 동기화 활성화됨 (${supabaseConfig.url})`;
+          notice.innerHTML = ` <strong>연결 성공:</strong> 클라우드 실시간 동기화 활성화됨 (${supabaseConfig.url})`;
         } else if (isError) {
           notice.style.background = '#fef2f2';
           notice.style.color = '#991b1b';
-          notice.innerHTML = `⚠️ <strong>연결 오류:</strong> ${text}`;
+          notice.innerHTML = ` <strong>연결 오류:</strong> ${text}`;
         } else {
           notice.style.background = '#f3f4f6';
           notice.style.color = '#374151';
@@ -1966,7 +1981,7 @@
         if (error) {
           console.error('Supabase 저장 실패:', error);
         } else {
-          console.log('⚡ Supabase 클라우드 동기화 완료');
+          console.log(' Supabase 클라우드 동기화 완료');
         }
       } catch (e) {
         console.error('syncToSupabase 에러:', e);
@@ -1995,7 +2010,7 @@
               appData = normalizeAccountData(payload.new.payload);
               localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
               renderCurrentView();
-              showToast('☁️ 다른 기기의 출석 변경사항이 실시간 동기화되었습니다.');
+              showToast(' 다른 기기의 출석 변경사항이 실시간 동기화되었습니다.');
             }
           })
           .subscribe();
@@ -2035,13 +2050,13 @@
         if (!cloudData) {
           // 클라우드에 아직 없으면 현재 데이터 업로드
           await syncToSupabase();
-          showToast('⚡ Supabase 연결 성공! 현재 데이터가 클라우드에 업로드되었습니다.');
+          showToast(' Supabase 연결 성공! 현재 데이터가 클라우드에 업로드되었습니다.');
         } else {
           // 클라우드에 데이터가 있으면 클라우드 데이터로 갱신
           appData = normalizeAccountData(cloudData);
           localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
           initAppUI();
-          showToast('⚡ Supabase 연결 성공! 클라우드 최신 데이터를 불러왔습니다.');
+          showToast(' Supabase 연결 성공! 클라우드 최신 데이터를 불러왔습니다.');
         }
         closeSupabaseModal();
       } else {
@@ -2117,16 +2132,6 @@
       }
     }
 
-    function resetToSampleData() {
-      if (confirm('모든 데이터를 초기 샘플 데이터로 복원하시겠습니까? 현재 작성된 데이터는 덮어씌워집니다.')) {
-        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        saveData();
-        isAdminLoggedIn = false;
-        initApp();
-        showToast('초기 샘플 데이터로 복원되었습니다. (비밀번호: 1234)');
-      }
-    }
-
     function exportDataJSON() {
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
@@ -2195,7 +2200,6 @@
       document.querySelectorAll('.view-panel:not(#entryView)').forEach(panel => panel.classList.remove('active'));
       document.getElementById('roleNavigation').classList.add('hidden');
       document.getElementById('programNavigation').classList.add('hidden');
-      document.getElementById('headerTools').classList.add('hidden');
     }
 
     function switchRole(role) {
@@ -2205,7 +2209,6 @@
       currentRole = role;
       document.getElementById('roleNavigation').classList.toggle('hidden', currentAdminRole === 'master');
       document.getElementById('programNavigation').classList.toggle('hidden', currentAdminRole === 'master');
-      document.getElementById('headerTools').classList.toggle('hidden', !isAdminLoggedIn);
       document.getElementById('tabKioskBtn').classList.toggle('active', role === 'kiosk');
       document.getElementById('tabAdminBtn').classList.toggle('active', role === 'admin');
       document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
@@ -2266,7 +2269,7 @@
 
     function updateAdminRoleUI() {
       const master = currentAdminRole === 'master';
-      document.getElementById('adminRoleIcon').textContent = master ? '🔒' : '👤';
+      document.getElementById('adminRoleIcon').innerHTML = master ? '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></svg>' : '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>';
       document.getElementById('adminRoleNameDisplay').textContent = master ? '관리자' : '담당자';
       document.getElementById('adminRoleBadge').textContent = currentAdminUser?.username || '';
       document.getElementById('adminRoleDescDisplay').textContent = master ? '담당자 계정을 등록하고 관리해 주세요.' : '프로그램, 참여자, 출석을 관리하고 출석부를 인쇄해 주세요.';
@@ -2603,14 +2606,19 @@
         const opt = document.createElement('option');
         opt.value = s.id;
         if (s.isHoliday) {
-          opt.textContent = `[휴강일] ${s.date} ${s.note ? '(' + s.note + ')' : ''}`;
+          opt.textContent = `[휴강일] ${formatSessionDate(s.date)} ${s.note ? '(' + s.note + ')' : ''}`;
         } else {
-          opt.textContent = `${s.round || roundCounter}회차 (${s.date}) ${s.note ? '- ' + s.note : ''}`;
+          opt.textContent = `${s.round || roundCounter}회차 (${formatSessionDate(s.date)}) ${s.note ? '- ' + s.note : ''}`;
           roundCounter++;
         }
         if (curSess && s.id === curSess.id) opt.selected = true;
         sessSelect.appendChild(opt);
       });
+    }
+
+    function formatSessionDate(value) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+      return match ? `${match[1]}년 ${Number(match[2])}월 ${Number(match[3])}일` : (value || '');
     }
 
     function updateProgramSummaryBadge() {
@@ -2634,13 +2642,13 @@
       const kioskTitle = document.getElementById('kioskTitleHeading');
       const kioskSub = document.getElementById('kioskSubtitle');
       if (curSess) {
-        const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회차 (${curSess.date})`;
+        const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회차 (${formatSessionDate(curSess.date)})`;
         kioskTitle.innerHTML = curSess.isHoliday
           ? `오늘은 <span class="accent-sora">휴강일</span>입니다`
-          : `어르신, <span class="accent-sora">${sessionLabel} 출석</span> 서명을 해 주세요!`;
+          : `<span class="accent-sora">${sessionLabel}</span>`;
         kioskSub.textContent = curSess.isHoliday
           ? '오늘은 휴강일로 지정되어 있어 출석 서명을 진행하지 않습니다.'
-          : `환영합니다! 본인의 이름을 누르시면 큰 서명창이 열립니다.`;
+          : `환영합니다! 본인의 이름을 누르고 서명해 주세요.`;
       }
     }
 
@@ -2716,11 +2724,11 @@
         if (isDroppedNow) {
           statusBadge = '<span class="tile-badge badge-pending">중도포기</span>';
         } else if (isAttended) {
-          statusBadge = '<span class="tile-badge badge-attended">✓ 출석 완료</span>';
+          statusBadge = '<span class="tile-badge badge-attended">출석 완료</span>';
         } else if (isAbsent) {
           statusBadge = '<span class="tile-badge badge-absent">결석 처리됨</span>';
         } else {
-          statusBadge = '<span class="tile-badge badge-pending">출석하기 ➔</span>';
+          statusBadge = '<span class="tile-badge badge-pending">출석하기 </span>';
         }
 
         const showMemberId = dupes.has(p.name) || p.memberId;
@@ -2900,7 +2908,7 @@
 
       saveData();
       closeSignatureModal();
-      showToast(`🎉 반갑습니다, ${activeParticipantForSig.name} 어르신! 출석이 완료되었습니다.`);
+      showToast(` ${activeParticipantForSig.name} 님, 출석을 완료했습니다.`);
       refreshActiveView();
     }
 
@@ -3450,7 +3458,7 @@
       const curSess = getCurrentSession();
       if (!curProg || !curSess) return;
 
-      const sessionTitle = curSess.isHoliday ? `휴강 (${curSess.date})` : `${curSess.round}회차 (${curSess.date})`;
+      const sessionTitle = curSess.isHoliday ? `휴강 (${formatSessionDate(curSess.date)})` : `${curSess.round}회차 (${formatSessionDate(curSess.date)})`;
       document.getElementById('adminAttendanceTitle').textContent = `[${curProg.name}] ${sessionTitle} 출석 관리`;
 
       const participants = curProg.participants || [];
@@ -3477,13 +3485,13 @@
           statusText = '<span style="color:#888; font-weight:700;">중도포기</span>';
         } else if (isAttended) {
           attended++;
-          statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">✓ 출석 완료</span>';
+          statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">출석 완료</span>';
           if (record.signature) {
             sigThumb = `<img src="${record.signature}" class="sig-thumbnail" alt="서명">`;
           }
         } else if (isAbsent) {
           absent++;
-          statusText = '<span style="color:var(--color-danger); font-weight:800;">✗ 결석</span>';
+          statusText = '<span style="color:var(--color-danger); font-weight:800;">결석</span>';
         } else {
           pending++;
           statusText = '<span style="color:var(--color-pencil-gray); font-weight:600;">미기록 (대기)</span>';
@@ -3761,11 +3769,11 @@
             appData = normalizeAccountData(cloudData);
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             initAppUI();
-            showToast('⚡ Supabase 클라우드와 실시간 연결되었습니다.');
+            showToast(' Supabase 클라우드와 실시간 연결되었습니다.');
           } else {
             // 클라우드에 아직 데이터가 없으면 현재 데이터로 최초 시드 업로드
             await syncToSupabase();
-            showToast('⚡ Supabase에 초기 출석 데이터가 업로드되었습니다.');
+            showToast(' Supabase에 초기 출석 데이터가 업로드되었습니다.');
           }
         }
       });

@@ -933,201 +933,9 @@
         page-break-after: always;
       }
     }
-    /* ==========================================================================
-       ORGANIZATION SECURITY GATEWAY STYLES (접속 즉시 기관 보안 로그인)
-       ========================================================================== */
-    .org-gateway-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      background: radial-gradient(circle at 50% 20%, #f0f7fe 0%, #e1effd 50%, #d0e6fb 100%);
-      z-index: 10000;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      padding: 20px;
-      backdrop-filter: blur(12px);
-      transition: opacity 0.35s ease, visibility 0.35s ease;
-    }
-
-    .org-gateway-overlay.unlocked {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
-    .org-gateway-card {
-      width: 100%;
-      max-width: 480px;
-      background: #ffffff;
-      border: 3px solid #1e293b;
-      border-radius: 28px;
-      padding: 38px 32px;
-      box-shadow: 0 16px 0 #1e293b, 0 30px 60px rgba(0, 0, 0, 0.15);
-      text-align: center;
-      animation: popInGateway 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes popInGateway {
-      0% { transform: scale(0.9) translateY(20px); opacity: 0; }
-      100% { transform: scale(1) translateY(0); opacity: 1; }
-    }
-
-    .org-gateway-icon {
-      font-size: 58px;
-      line-height: 1;
-      margin-bottom: 12px;
-      display: inline-block;
-      animation: bounceIcon 2.6s infinite ease-in-out;
-    }
-
-    @keyframes bounceIcon {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-8px); }
-    }
-
-    .org-gateway-badge {
-      display: inline-block;
-      background: #e0f2fe;
-      color: #0284c7;
-      font-size: 13px;
-      font-weight: 800;
-      padding: 6px 16px;
-      border-radius: 999px;
-      border: 2px solid #bae6fd;
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
-    }
-
-    .org-gateway-title {
-      font-family: var(--font-family-display);
-      font-size: 26px;
-      font-weight: 900;
-      color: #0f172a;
-      margin-bottom: 8px;
-      line-height: 1.3;
-    }
-
-    .org-gateway-desc {
-      font-size: 14px;
-      color: #64748b;
-      line-height: 1.5;
-      margin-bottom: 24px;
-    }
-
-    .org-gateway-form {
-      text-align: left;
-    }
-
-    .org-gateway-form .form-group {
-      margin-bottom: 16px;
-    }
-
-    .org-gateway-form label {
-      display: block;
-      font-size: 13px;
-      font-weight: 800;
-      color: #334155;
-      margin-bottom: 6px;
-    }
-
-    .org-gateway-form input,
-    .org-gateway-form select {
-      width: 100%;
-      padding: 14px 16px;
-      font-size: 16px;
-      font-weight: 700;
-      border: 2.5px solid #cbd5e1;
-      border-radius: 16px;
-      outline: none;
-      transition: all 0.2s ease;
-      background: #f8fafc;
-    }
-
-    .org-gateway-form input:focus,
-    .org-gateway-form select:focus {
-      border-color: var(--color-sora);
-      background: #ffffff;
-      box-shadow: 0 0 0 4px rgba(79, 168, 234, 0.2);
-    }
-
-    .org-gateway-btn {
-      width: 100%;
-      padding: 16px;
-      font-size: 18px;
-      font-weight: 900;
-      font-family: var(--font-family-display);
-      color: #ffffff;
-      background: var(--color-sora);
-      border: 3px solid #1e293b;
-      border-radius: 18px;
-      box-shadow: 0 6px 0 #1e293b;
-      cursor: pointer;
-      transition: all 0.15s ease;
-      margin-top: 10px;
-    }
-
-    .org-gateway-btn:hover {
-      background: var(--color-sora-hover);
-      transform: translateY(-2px);
-      box-shadow: 0 8px 0 #1e293b;
-    }
-
-    .org-gateway-btn:active {
-      transform: translateY(4px);
-      box-shadow: 0 2px 0 #1e293b;
-    }
-
-    .org-gateway-notice {
-      margin-top: 18px;
-      padding: 12px 14px;
-      background: #f1f5f9;
-      border-radius: 12px;
-      font-size: 12px;
-      color: #64748b;
-      line-height: 1.45;
-      text-align: center;
-    }
   </style>
 </head>
 <body>
-
-  <!-- ====================================================================
-       ORGANIZATION SECURITY GATEWAY (접속 즉시 기관 보안 로그인 오버레이)
-       ==================================================================== -->
-  <div id="orgGatewayOverlay" class="org-gateway-overlay">
-    <div class="org-gateway-card">
-      <div class="org-gateway-icon">🏛️</div>
-      <span class="org-gateway-badge">기관 보안 인증</span>
-      <h2 class="org-gateway-title">노인복지관 전자출석부</h2>
-      <p class="org-gateway-desc">
-        어르신 개인정보 및 출석부 보안을 위해<br>
-        <strong>기관 보안 코드</strong>를 입력해 주시기 바랍니다.
-      </p>
-
-      <form class="org-gateway-form" onsubmit="handleOrgGatewayLogin(event)">
-        <div class="form-group">
-          <label>소속기관</label>
-          <input type="text" id="orgNameInput" value="행복복지관" placeholder="예: OO복지관" required>
-        </div>
-
-        <div class="form-group">
-          <label>기관 보안 코드 (비밀번호)</label>
-          <input type="password" id="orgSecurityCodeInput" placeholder="기관 보안 코드 입력" style="letter-spacing: 2px;" required autofocus>
-        </div>
-
-        <button type="submit" class="org-gateway-btn">
-          <span>입장하기 🔓</span>
-        </button>
-
-        <div class="org-gateway-notice">
-          💡 초기 기본 보안 코드는 <strong>2026</strong> 입니다.
-        </div>
-      </form>
-    </div>
-  </div>
 
   <!-- Top Site Header (소라색 & 책/연필 마스코트) -->
   <header class="site-header">
@@ -1158,7 +966,6 @@
       <button class="btn btn-sm" onclick="exportDataJSON()" title="데이터 백업">백업</button>
       <button class="btn btn-sm" onclick="triggerImportJSON()" title="데이터 복원">복원</button>
       <input type="file" id="importJsonInput" style="display:none;" accept=".json" onchange="importDataJSON(event)">
-      <button class="btn btn-sm" onclick="lockOrgGateway()" title="화면 잠금 (기관 보안 로그인으로 복귀)">🔒 잠금</button>
       <button class="btn btn-sm btn-danger" onclick="resetToSampleData()" title="초기 데이터 복원">초기화</button>
     </div>
   </header>
@@ -1911,7 +1718,6 @@
        1. DATA STRUCTURE & SAMPLE SEED DATA
        ========================================================================== */
     const STORAGE_KEY = 'SENIOR_ATTENDANCE_DATA_V4_TEST';
-    const ORG_SESSION_KEY = 'SENIOR_ATTENDANCE_ORG_AUTH_SESSION_V1';
 
     // Default Security Passwords & Admin Accounts
     const DEFAULT_ORG_NAME = '행복복지관';
@@ -2385,85 +2191,17 @@
     /* ==========================================================================
        3. ORGANIZATION SECURITY GATEWAY & ADMIN NAVIGATION
        ========================================================================== */
-    function checkOrgGatewayAuth() {
-      const isOrgAuthenticated = sessionStorage.getItem(ORG_SESSION_KEY) === 'true';
-      const overlay = document.getElementById('orgGatewayOverlay');
-      const orgNameInput = document.getElementById('orgNameInput');
+    function updateOrgBrandDisplay() {
+      const orgTitle = document.getElementById('headerOrgTitleDisplay');
+      const orgSub = document.getElementById('headerOrgSubDisplay');
+      const currentOrgName = (appData && appData.orgName) ? appData.orgName : DEFAULT_ORG_NAME;
 
-      if (orgNameInput && appData && appData.orgName) {
-        orgNameInput.value = appData.orgName;
+      if (orgTitle) {
+        orgTitle.textContent = `${currentOrgName} 전자출석부`;
       }
-      updateOrgBrandDisplay();
-
-      if (isOrgAuthenticated) {
-        overlay.classList.add('unlocked');
-      } else {
-        overlay.classList.remove('unlocked');
-        setTimeout(() => {
-          const codeInput = document.getElementById('orgSecurityCodeInput');
-          if (codeInput) {
-            codeInput.value = '';
-            codeInput.focus();
-          }
-        }, 150);
+      if (orgSub) {
+        orgSub.textContent = `Senior Attendance System · ${currentOrgName} 배움터`;
       }
-    }
-
-    function handleOrgGatewayLogin(event) {
-      if (event) event.preventDefault();
-      const codeInput = document.getElementById('orgSecurityCodeInput');
-      const nameInput = document.getElementById('orgNameInput');
-      const enteredCode = (codeInput?.value || '').trim();
-      const enteredName = (nameInput?.value || '').trim() || DEFAULT_ORG_NAME;
-
-      const validCode = (appData && appData.orgSecurityCode) ? appData.orgSecurityCode : DEFAULT_ORG_SECURITY_CODE;
-
-      if (enteredCode === validCode) {
-        sessionStorage.setItem(ORG_SESSION_KEY, 'true');
-        if (appData) {
-          appData.orgName = enteredName;
-          saveData();
-        }
-        updateOrgBrandDisplay();
-        unlockOrgGateway();
-        showToast(`🏛️ ${enteredName} 보안 인증 완료! 관리자 인증으로 이동합니다.`);
-        
-        // 🚀 요구사항: 기관 보안 로그인 성공 후 즉시 관리자 모드 인증 화면으로 바로 이동!
-        setTimeout(() => {
-          openAdminLoginModal();
-        }, 200);
-      } else {
-        alert('기관 보안 코드가 일치하지 않습니다. (초기 기본 코드: 2026)');
-        if (codeInput) {
-          codeInput.focus();
-          codeInput.select();
-        }
-      }
-    }
-
-    function unlockOrgGateway() {
-      const overlay = document.getElementById('orgGatewayOverlay');
-      if (overlay) {
-        overlay.classList.add('unlocked');
-      }
-    }
-
-    function lockOrgGateway() {
-      sessionStorage.removeItem(ORG_SESSION_KEY);
-      isAdminLoggedIn = false; // 관리자 모드도 함께 안전 로그아웃
-      currentAdminRole = 'general';
-      currentAdminUser = null;
-      switchRole('kiosk');
-      const overlay = document.getElementById('orgGatewayOverlay');
-      if (overlay) {
-        overlay.classList.remove('unlocked');
-        const codeInput = document.getElementById('orgSecurityCodeInput');
-        if (codeInput) {
-          codeInput.value = '';
-          codeInput.focus();
-        }
-      }
-      showToast('🔒 화면이 잠겼습니다. (기관 보안 인증 필요)');
     }
 
     function updateOrgBrandDisplay() {
@@ -4194,7 +3932,6 @@
 
     async function initApp() {
       await loadData();
-      checkOrgGatewayAuth(); // 🏛️ 접속 즉시 기관 보안 로그인 상태 확인
       populateGlobalSelectors();
       initSignatureCanvas();
       switchRole('kiosk');
@@ -4207,7 +3944,6 @@
             appData = cloudData;
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             initAppUI();
-            checkOrgGatewayAuth();
             showToast('⚡ Supabase 클라우드와 실시간 연결되었습니다.');
           } else {
             // 클라우드에 아직 데이터가 없으면 현재 데이터로 최초 시드 업로드

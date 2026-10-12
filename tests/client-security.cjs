@@ -1,0 +1,44 @@
+const fs=require('fs'),vm=require('vm'),assert=require('assert/strict');
+const html=fs.readFileSync('index.html','utf8');
+const code=[...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)].map(m=>m[1]).join('\n');
+const nodes=new Map();let serial=0;
+function node(id='generated-'+serial++){
+ if(nodes.has(id))return nodes.get(id);const classes=new Set();
+ const n={id,value:'',checked:true,style:{},textContent:'',innerHTML:'',children:[],classList:{add:x=>classes.add(x),remove:x=>classes.delete(x),contains:x=>classes.has(x),toggle:(x,v)=>{v??=!classes.has(x);v?classes.add(x):classes.delete(x);}},focus(){},appendChild(x){this.children.push(x);},getAttribute(){return '';},getContext(){return new Proxy({}, {get:()=>()=>{}});},toDataURL(){return 'data:image/png;base64,test';}};
+ nodes.set(id,n);return n;
+}
+const tabs=['Program','Participants','Attendance','Print','Master'].map(x=>node('subtabBtn'+x));
+const panels=['entryView','kioskView','adminView'].map(node);let alerts=[];
+const ctx={console,setTimeout:()=>0,clearTimeout(){},setInterval:()=>0,clearInterval(){},alert:x=>alerts.push(x),confirm:()=>true,window:{addEventListener(){},print(){}},document:{getElementById:node,createElement:()=>node(),querySelector:()=>null,querySelectorAll:q=>q==='.admin-subtab-btn'?tabs:q.includes('.view-panel')?panels.filter(n=>!q.includes(':not')||n.id!=='entryView'):[]},localStorage:{getItem:()=>null,setItem(){throw Error('Private state must not be cached');},removeItem(){}},Date};
+vm.createContext(ctx);vm.runInContext(fs.readFileSync('tools/preview-api.js','utf8'),ctx);vm.runInContext(code,ctx);
+const run=x=>vm.runInContext(x,ctx);
+run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsTable=()=>{};
+ async function login(type,user,pw,destination='attendance'){openAdminLoginModal(type,destination);document.getElementById('adminUsernameInput').value=user;document.getElementById('adminPasswordInput').value=pw;await handleAdminLogin({preventDefault(){}});}`);
+(async()=>{
+ await run('loadData()');run('showEntryScreen()');assert.equal(run('appData.programs.length'),0);
+ await run('initSupabaseClient()');
+ await run("login('general','admin','wrong')");assert.equal(run('currentRole'),'entry');
+ await run("login('general','admin','1234')");assert.equal(run('currentRole'),'kiosk');assert.equal(run('isAdminLoggedIn'),false);
+ assert.equal(run('appData.generalAdmins.length'),0);assert.equal(run('appData.adminPassword'),undefined);
+ run('tryEnterAdminMode()');assert.equal(node('adminLoginModal').classList.contains('hidden'),false);
+ await run("login('general','admin','1234','management')");assert.equal(run('currentRole'),'admin');
+ run("switchAdminTab('master')");assert.equal(run('currentAdminTab'),'program');
+ run("switchRole('kiosk');switchRole('admin')");assert.equal(run('currentRole'),'kiosk');
+ await run("logoutAdmin();");await run("login('master','master','master1234')");assert.equal(run('currentAdminTab'),'master');
+ assert.equal(run('appData.masterAccount.password'),undefined);
+ node('masterUsernameInput').value='master2';node('masterCurrentPasswordInput').value='wrong';node('masterPasswordInput').value='new-pass';node('masterConfirmPasswordInput').value='new-pass';
+ await run('saveMasterAccountSettings({preventDefault(){}})');assert.equal(run('appData.masterAccount.username'),'master');
+ node('masterCurrentPasswordInput').value='master1234';await run('saveMasterAccountSettings({preventDefault(){}})');assert.equal(run('appData.masterAccount.username'),'master2');
+ node('editAdminIndex').value='-1';node('accUsernameInput').value='staff2';node('accPasswordInput').value='staff-pass';node('accNameInput').value='미술 담당';
+ await run('saveAdminAccount({preventDefault(){}})');assert.equal(run("appData.generalAdmins.find(a=>a.username==='staff2').memo"),'미술 담당');
+ assert.equal(run("appData.generalAdmins.find(a=>a.username==='staff2').password"),undefined);
+ await run('logoutAdmin()');await run("login('general','staff2','staff-pass','management')");
+ node('printScopeType').value='all';node('printSessionsPerPage').value='6';node('printOrientation').value='portrait';
+ run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 portrait'));
+ const page=node('a4PagesContainer').children[0];assert(page.className.includes('a4-portrait-page'));assert(page.innerHTML.includes('테스트 프로그램 출석부'));assert(!page.innerHTML.includes('* 비고:'));
+ node('printOrientation').value='landscape';run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 landscape'));
+ await run('logoutAdmin()');assert.equal(run('cloudToken'),'');assert.equal(run('appData.programs.length'),0);
+ const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
+ assert(!html.includes(".from(SUPABASE_TABLE_NAME)"));assert(!html.includes('master1234'));assert(!html.includes('sb_secret_')||html.includes("key.startsWith('sb_secret_')"));
+ console.log('PASS: server API login, no cached private data, role separation, account changes, masked passwords, portrait/landscape, logout, unique IDs');
+})().catch(e=>{console.error(e);process.exitCode=1;});

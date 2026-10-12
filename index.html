@@ -956,6 +956,28 @@
       .header-actions { flex-wrap:wrap; }
     }
   </style>
+  <style>
+    body { word-break:keep-all; overflow-wrap:anywhere; }
+    .role-btn.btn-danger { background:#fee2e2; color:#b91c1c; border-color:#fecaca; }
+    .role-btn.btn-danger:hover { background:#fecaca; }
+    .program-selector-group { width:100%; display:grid; grid-template-columns:auto minmax(0,1fr); }
+    .program-selector-group select { width:100%; min-width:0; }
+    .program-selector-group .bar-label { margin-left:0 !important; }
+    .a4-portrait-page { max-width:720px; }
+    .a4-portrait-page .a4-attendance-table { table-layout:fixed; font-size:10px; }
+    .a4-portrait-page .a4-attendance-table th { width:auto !important; }
+    .a4-portrait-page .a4-meta-table { font-size:11px; }
+    .a4-portrait-page .a4-meta-table th,.a4-portrait-page .a4-meta-table td { padding:5px; }
+    .a4-portrait-page .a4-sig-cell img { max-width:100%; }
+    @media print {
+      #adminView > :not(#adminPrintSubtab) { display:none !important; }
+      .a4-landscape-page:last-child { page-break-after:auto; }
+      .a4-attendance-table thead { display:table-header-group; }
+      .a4-attendance-table tr { break-inside:avoid; }
+      .a4-footer { justify-content:flex-end; }
+    }
+  </style>
+  <style id="printPageStyle"></style>
 </head>
 <body>
 
@@ -982,7 +1004,7 @@
       <button class="role-btn" id="tabAdminBtn" onclick="tryEnterAdminMode()">
         <svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg> 담당자
       </button>
-      <button class="role-btn" onclick="logoutAdmin()">로그아웃</button>
+      <button class="role-btn btn-danger" onclick="logoutAdmin()">로그아웃</button>
     </div>
 
   </header>
@@ -1060,10 +1082,6 @@
           <div>
             <div style="display:flex; align-items:center; gap:8px;">
               <span style="font-weight:900; color:var(--color-charcoal);" id="adminRoleNameDisplay">관리자 인증됨</span>
-              <span id="adminRoleBadge" class="hero-badge" style="font-size:11px; padding:3px 10px; margin:0;">담당자</span>
-            </div>
-            <div style="font-size:12px; color:var(--color-pencil-gray);" id="adminRoleDescDisplay">
-              프로그램 및 참여자 출석 관리가 가능합니다.
             </div>
           </div>
         </div>
@@ -1096,22 +1114,22 @@
           <form id="programForm" onsubmit="saveCurrentProgram(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label for="progName">프로그램명 *</label>
+                <label for="progName">프로그램명 (필수)</label>
                 <input type="text" id="progName" required placeholder="예: 시니어 스마트폰 기초교실">
               </div>
               <div class="form-group">
-                <label>운영기간 (시작일 ~ 종료일) *</label>
+                <label>운영기간 (시작일 ~ 종료일) (필수)</label>
                 <div style="display: flex; gap: 8px;">
                   <input type="date" id="progStartDate" required onchange="autoGenerateSessionsPreview()">
                   <input type="date" id="progEndDate" required onchange="autoGenerateSessionsPreview()">
                 </div>
               </div>
               <div class="form-group">
-                <label for="progTotalSessions">총 회차수 *</label>
+                <label for="progTotalSessions">총 회차수 (필수)</label>
                 <input type="number" id="progTotalSessions" min="1" max="50" value="8" required onchange="autoGenerateSessionsPreview()">
               </div>
               <div class="form-group">
-                <label>운영 요일 *</label>
+                <label>운영 요일 (필수)</label>
                 <div class="checkbox-group" id="progDayCheckboxes">
                   <label class="checkbox-label"><input type="checkbox" value="1"> 월</label>
                   <label class="checkbox-label"><input type="checkbox" value="2"> 화</label>
@@ -1151,7 +1169,7 @@
           <div class="card-header">
             <div>
               <span class="bar-label">SESSION SCHEDULE</span>
-              <h3 class="card-title">회차별 일정 및 휴강 관리</h3>
+              <h3 class="card-title">회차 관리</h3>
             </div>
             <div style="display:flex; gap:8px;">
               <button class="btn btn-sm btn-sora" onclick="regenerateSessionsByRule()">요일 기준 회차 자동 재생성</button>
@@ -1272,6 +1290,10 @@
           </div>
 
           <div class="print-options-bar">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label for="printOrientation" style="font-size:13px;font-weight:800;">용지 방향:</label>
+              <select id="printOrientation" onchange="renderA4PrintPages()"><option value="landscape">가로형</option><option value="portrait">세로형</option></select>
+            </div>
             <!-- Scope selection -->
             <div style="display:flex; align-items:center; gap: 10px;">
               <label style="font-size:13px; font-weight:800;">인쇄 범위:</label>
@@ -1329,7 +1351,7 @@
       <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
 
-<div class="card" style="margin-top:24px;margin-bottom:24px;"><h3 class="card-title">데이터 관리</h3><p style="margin:12px 0;">데이터 연결과 파일 보관</p>
+<div class="card" style="margin-top:24px;margin-bottom:24px;"><h3 class="card-title" style="margin-bottom:16px;">데이터 관리</h3>
     <div class="header-actions" id="headerTools">
       <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
         <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
@@ -1355,9 +1377,9 @@
                 <tr>
                   <th style="width: 60px;">번호</th>
                   <th>아이디</th>
-                  <th>관리자 확인용 메모</th>
                   <th>비밀번호</th>
                   <th>등록일시</th>
+                  <th>메모</th>
                   <th style="width: 140px; text-align: center;">관리</th>
                 </tr>
               </thead>
@@ -1372,26 +1394,25 @@
         <div class="card">
           <div class="card-header">
             <div>
-              <span class="bar-label" style="background:#fee2e2; color:#991b1b;">계정 변경</span>
               <h3 class="card-title">관리자 계정 변경</h3>
             </div>
           </div>
           <form onsubmit="saveMasterAccountSettings(event)">
             <div class="form-grid">
               <div class="form-group">
-                <label for="masterUsernameInput">아이디 *</label>
+                <label for="masterUsernameInput">아이디 (필수)</label>
                 <input type="text" id="masterUsernameInput" required placeholder="예: master">
               </div>
               <div class="form-group">
-                <label for="masterCurrentPasswordInput">현재 비밀번호 *</label>
+                <label for="masterCurrentPasswordInput">현재 비밀번호 (필수)</label>
                 <input type="password" id="masterCurrentPasswordInput" required autocomplete="current-password" placeholder="현재 비밀번호 입력">
               </div>
               <div class="form-group">
-                <label for="masterPasswordInput">새 비밀번호 *</label>
+                <label for="masterPasswordInput">새 비밀번호 (필수)</label>
                 <input type="password" id="masterPasswordInput" required placeholder="새 비밀번호 입력" autocomplete="new-password">
               </div>
               <div class="form-group">
-                <label for="masterConfirmPasswordInput">새 비밀번호 확인 *</label>
+                <label for="masterConfirmPasswordInput">새 비밀번호 확인 (필수)</label>
                 <input type="password" id="masterConfirmPasswordInput" required autocomplete="new-password" placeholder="새 비밀번호 다시 입력">
               </div>
             </div>
@@ -1453,15 +1474,15 @@
         <div style="background: #fefce8; border: 1.5px solid #fef08a; border-radius: 14px; padding: 14px; margin-bottom: 16px;">
           <div style="font-weight: 800; font-size: 13px; color: #854d0e; margin-bottom: 8px;"> 담당자 비밀번호 변경</div>
           <div class="form-group" style="margin-bottom: 10px;">
-            <label for="currPwInput">현재 비밀번호 *</label>
+            <label for="currPwInput">현재 비밀번호 (필수)</label>
             <input type="password" id="currPwInput" required placeholder="기본값: 1234">
           </div>
           <div class="form-group" style="margin-bottom: 10px;">
-            <label for="newPwInput">새 비밀번호 *</label>
+            <label for="newPwInput">새 비밀번호 (필수)</label>
             <input type="password" id="newPwInput" required placeholder="새 비밀번호">
           </div>
           <div class="form-group">
-            <label for="newPwConfirmInput">새 비밀번호 확인 *</label>
+            <label for="newPwConfirmInput">새 비밀번호 확인 (필수)</label>
             <input type="password" id="newPwConfirmInput" required placeholder="새 비밀번호 다시 입력">
           </div>
         </div>
@@ -1496,7 +1517,7 @@
       <div class="modal-header">
         <h3 class="modal-title"><span id="sigModalParticipantName" style="color:var(--color-sora-deep);">홍길동</span> 님 서명</h3>
         <p style="font-size: 14px; color: var(--color-pencil-gray); font-weight: 600; margin-top: 4px;">
-          아래 네모 상자 안에 손가락이나 펜으로 이름을 정성껏 적어주세요.
+          아래 네모 상자 안에 서명해주세요.
         </p>
       </div>
 
@@ -1525,7 +1546,7 @@
       <form id="participantForm" onsubmit="saveParticipant(event)">
         <input type="hidden" id="partId">
         <div class="form-group" style="margin-bottom: 12px;">
-          <label for="partName">이름 *</label>
+          <label for="partName">이름 (필수)</label>
           <input type="text" id="partName" required placeholder="예: 홍길동">
         </div>
         <div class="form-group" style="margin-bottom: 12px;">
@@ -1545,7 +1566,7 @@
             <input type="checkbox" id="partIsDropped" onchange="toggleDroppedSessionInput()"> 중도포기 여부
           </label>
           <div id="partDroppedSessionWrap" style="display:none; margin-top: 8px;">
-            <label style="font-size: 13px;">중도포기 시작 회차:</label>
+            <label style="font-size: 13px;">중도포기 회차:</label>
             <input type="number" id="partDroppedSession" min="1" value="1" style="width: 80px;">
           </div>
         </div>
@@ -1589,15 +1610,15 @@
         <h3 class="modal-title">새 배움터 프로그램 만들기</h3>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgTitle">프로그램명 *</label>
+        <label for="newProgTitle">프로그램명 (필수)</label>
         <input type="text" id="newProgTitle" placeholder="예: 시니어 스마트폰 기초과정" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgStart">시작일자 *</label>
+        <label for="newProgStart">시작일자 (필수)</label>
         <input type="date" id="newProgStart" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="newProgEnd">종료일자 *</label>
+        <label for="newProgEnd">종료일자 (필수)</label>
         <input type="date" id="newProgEnd" required>
       </div>
       <div class="form-group" style="margin-bottom: 14px;">
@@ -1619,35 +1640,34 @@
         <h3 class="modal-title"> 수파베이스 (Supabase) 연동 설정</h3>
       </div>
       <p style="font-size: 14px; color: #4b5563; line-height: 1.5; margin-bottom: 16px;">
-        수파베이스를 연결하면 여러 PC, 태블릿, 스마트폰에서 <strong>실시간 출석 데이터가 공유 및 영구 보관</strong>됩니다.
-        (미설정 시 현재 브라우저의 로컬 저장소에 안전하게 유지됩니다.)
+        여러 기기에서 같은 출석 자료를 사용합니다. 로그인한 계정만 자료에 접근할 수 있습니다.
       </p>
 
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="supabaseUrlInput">Supabase Project URL *</label>
+        <label for="supabaseUrlInput">프로젝트 주소 (필수)</label>
         <input type="text" id="supabaseUrlInput" placeholder="https://your-project.supabase.co" autocomplete="off">
-        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Supabase 대시보드 > Project Settings > API > Project URL</small>
+        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">수파베이스 프로젝트의 연결 주소입니다.</small>
       </div>
 
       <div class="form-group" style="margin-bottom: 14px;">
-        <label for="supabaseKeyInput">Supabase Anon (Public) Key *</label>
+        <label for="supabaseKeyInput">공개 연결키 (필수)</label>
         <textarea id="supabaseKeyInput" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." style="font-family:monospace; font-size:12px;"></textarea>
-        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">Project Settings > API > Project API keys > `anon` `public` 키</small>
+        <small style="color: #6b7280; font-size: 12px; margin-top: 4px; display:block;">공개 연결키만 사용해 주세요. 비밀키는 사용할 수 없습니다.</small>
       </div>
 
       <div id="supabaseStatusNotice" style="padding: 12px 16px; border-radius: 12px; font-size: 13px; font-weight: 700; margin-bottom: 16px; background: #f3f4f6; color: #374151;">
-        현재 상태: 로컬 브라우저 저장소 모드 (미연동)
+        현재 상태: 연결 확인 중
       </div>
 
       <div style="background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 12px; padding: 12px; margin-bottom: 16px;">
         <div style="font-size: 12px; font-weight: 800; color: #334155; margin-bottom: 4px;"> Supabase 테이블 설정 팁</div>
         <div style="font-size: 12px; color: #64748b; line-height: 1.4;">
-          프로젝트 폴더 내 <code>supabase_schema.sql</code> 파일을 Supabase SQL Editor에서 실행하시면 테이블 및 RLS 설정이 3초 만에 완료됩니다.
+          비밀키는 입력하지 마세요. 기존 자료와 테이블은 보안 설정을 변경해도 보존됩니다.
         </div>
       </div>
 
       <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap;">
-        <button type="button" class="btn btn-sm btn-danger" onclick="disconnectSupabase()">연동 해제 (로컬 전환)</button>
+        <button type="button" class="btn btn-sm btn-danger" onclick="disconnectSupabase()">연결 해제</button>
         <div style="display: flex; gap: 8px;">
           <button type="button" class="btn" onclick="closeSupabaseModal()">닫기</button>
           <button type="submit" class="btn btn-sora" onclick="saveAndTestSupabase()">저장 및 연결</button>
@@ -1666,21 +1686,21 @@
       <form onsubmit="saveAdminAccount(event)">
         <input type="hidden" id="editAdminIndex" value="-1">
 
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label for="accUsernameInput">아이디 *</label>
-          <input type="text" id="accUsernameInput" required placeholder="예: admin1, manager">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="accNumberInput">번호</label><input id="accNumberInput" type="text" readonly>
         </div>
-
-        <div class="form-group" style="margin-bottom: 12px;">
-          <label for="accNameInput">관리자 확인용 메모</label>
-          <textarea id="accNameInput" rows="3" placeholder="예: 오전 미술 프로그램 담당"></textarea><small>이 메모는 관리자만 확인합니다.</small>
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="accUsernameInput">아이디 (필수)</label><input id="accUsernameInput" type="text" required placeholder="아이디 입력">
         </div>
-
-        <div class="form-group" style="margin-bottom: 16px;">
-          <label for="accPasswordInput">비밀번호 *</label>
-          <input type="password" id="accPasswordInput" required placeholder="비밀번호 입력">
+        <div class="form-group" style="margin-bottom:12px;">
+          <label id="accPasswordLabel" for="accPasswordInput">비밀번호 (필수)</label><input id="accPasswordInput" type="password" required placeholder="비밀번호 입력">
         </div>
-
+        <div class="form-group" style="margin-bottom:12px;">
+          <label for="accCreatedAtInput">등록일시</label><input id="accCreatedAtInput" type="text" readonly>
+        </div>
+        <div class="form-group" style="margin-bottom:16px;">
+          <label for="accNameInput">메모</label><textarea id="accNameInput" rows="3" placeholder="예: 오전 미술 프로그램 담당"></textarea><small>관리자만 확인합니다.</small>
+        </div>
         <div style="display:flex; justify-content:flex-end; gap:10px;">
           <button type="button" class="btn" onclick="closeAdminAccountModal()">취소</button>
           <button type="submit" class="btn btn-sora" id="adminAccountSubmitBtn">계정 등록</button>
@@ -1704,15 +1724,15 @@
     // Default Security Passwords & Admin Accounts
     const DEFAULT_ORG_NAME = '행복복지관';
     const DEFAULT_ORG_SECURITY_CODE = '2026'; // 접속 즉시 기관 보안 로그인 비밀번호
-    const DEFAULT_ADMIN_PASSWORD = '1234';    // 기본 담당자 비밀번호
+    const DEFAULT_ADMIN_PASSWORD = '';    // 기본 담당자 비밀번호
 
     const DEFAULT_MASTER_ACCOUNT = {
       username: 'master',
-      password: 'master1234'
+      password: ''
     };
 
     const DEFAULT_GENERAL_ADMINS = [
-      { id: 'adm_001', username: 'admin', memo: '기본 담당자', password: '1234', createdAt: '2026-10-12' }
+      { id: 'adm_001', username: 'admin', memo: '기본 담당자', password: '', createdAt: '2026-10-12' }
     ];
 
     const DEFAULT_DATA = {
@@ -1848,6 +1868,27 @@
     let isSupabaseConnected = false;
     let isSyncing = false;
     let realtimeChannel = null;
+    let cloudToken = '';
+    let securePollTimer = null;
+    let saveQueue = Promise.resolve();
+    let pendingCloudSaves = 0;
+    let cloudSaveFailed = false;
+    async function secureRequest(action, body = {}, token = cloudToken) {
+      if (!supabaseClient) throw new Error('데이터 연결을 확인해 주세요.');
+      const { data, error } = await supabaseClient.rpc('rollbook_api', {action, session_token: token, body});
+      if (error) throw new Error('서버 연결을 확인해 주세요.');
+      if (!data?.ok) {
+        if (data?.expired) { cloudToken = ''; showEntryScreen(); }
+        throw new Error(data?.error || '요청을 처리하지 못했습니다.');
+      }
+      return data;
+    }
+    async function refreshSecureData() {
+      const result = await secureRequest('get');
+      appData = result.data;
+      return appData;
+    }
+
 
     function loadSupabaseConfig() {
       const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
@@ -1875,42 +1916,14 @@
     // Supabase 클라이언트 초기화 및 연결
     async function initSupabaseClient() {
       loadSupabaseConfig();
-      if (!supabaseConfig.url || !supabaseConfig.anonKey) {
-        setSupabaseStatus(false, '로컬 모드 (미연동)');
-        return false;
+      if (!supabaseConfig.url || !supabaseConfig.anonKey || !window.supabase?.createClient) {
+        setSupabaseStatus(false, '연결을 확인해 주세요.', true); return false;
       }
-
-      if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
-        console.warn('Supabase JS SDK가 아직 로드되지 않았습니다.');
-        setSupabaseStatus(false, 'SDK 로드 대기 중');
-        return false;
-      }
-
       try {
-        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey);
-
-        // 연결 테스트: attendance_data 테이블 조회
-        const { data, error } = await supabaseClient
-          .from(SUPABASE_TABLE_NAME)
-          .select('id, updated_at')
-          .eq('id', SUPABASE_ROW_ID)
-          .maybeSingle();
-
-        if (error) {
-          console.warn('Supabase 접속 경고:', error.message);
-          setSupabaseStatus(false, `연결 실패 (${error.message})`, true);
-          return false;
-        }
-
-        isSupabaseConnected = true;
-        setSupabaseStatus(true, '클라우드 동기화 연결됨');
-        setupRealtimeSubscription();
-        return true;
-      } catch (err) {
-        console.error('Supabase 초기화 오류:', err);
-        setSupabaseStatus(false, '연결 오류', true);
-        return false;
-      }
+        supabaseClient = window.supabase.createClient(supabaseConfig.url, supabaseConfig.anonKey, {auth:{persistSession:false,autoRefreshToken:false}});
+        await secureRequest('status', {}, '');
+        setSupabaseStatus(true, '보안 연결'); return true;
+      } catch (err) { setSupabaseStatus(false, '연결 실패', true); return false; }
     }
 
     function setSupabaseStatus(connected, text, isError = false) {
@@ -1929,7 +1942,7 @@
         if (connected) {
           notice.style.background = '#ecfdf5';
           notice.style.color = '#065f46';
-          notice.innerHTML = ` <strong>연결 성공:</strong> 클라우드 실시간 동기화 활성화됨 (${supabaseConfig.url})`;
+          notice.innerHTML = ` <strong>연결 성공:</strong> 로그인 후 자료에 접근할 수 있습니다. (${supabaseConfig.url})`;
         } else if (isError) {
           notice.style.background = '#fef2f2';
           notice.style.color = '#991b1b';
@@ -1937,89 +1950,47 @@
         } else {
           notice.style.background = '#f3f4f6';
           notice.style.color = '#374151';
-          notice.innerHTML = `현재 상태: 로컬 브라우저 저장소 모드 (미연동)`;
+          notice.textContent = '현재 상태: 연결되지 않음';
         }
       }
     }
 
     // 클라우드 데이터베이스에서 불러오기
     async function fetchFromSupabase() {
-      if (!supabaseClient || !isSupabaseConnected) return null;
-      try {
-        const { data, error } = await supabaseClient
-          .from(SUPABASE_TABLE_NAME)
-          .select('payload, updated_at')
-          .eq('id', SUPABASE_ROW_ID)
-          .maybeSingle();
-
-        if (error) {
-          console.error('Supabase 데이터 로드 실패:', error);
-          return null;
-        }
-        if (data && data.payload) {
-          return data.payload;
-        }
-      } catch (e) {
-        console.error('fetchFromSupabase 에러:', e);
-      }
-      return null;
+      if (!cloudToken || !isSupabaseConnected) return null;
+      return (await secureRequest('get')).data;
     }
 
-    // 클라우드 데이터베이스로 저장하기
-    async function syncToSupabase() {
-      if (!supabaseClient || !isSupabaseConnected || isSyncing) return;
-      isSyncing = true;
-      try {
-        const { error } = await supabaseClient
-          .from(SUPABASE_TABLE_NAME)
-          .upsert({
-            id: SUPABASE_ROW_ID,
-            payload: appData,
-            updated_at: new Date().toISOString()
-          }, { onConflict: 'id' });
-
-        if (error) {
-          console.error('Supabase 저장 실패:', error);
-        } else {
-          console.log(' Supabase 클라우드 동기화 완료');
-        }
-      } catch (e) {
-        console.error('syncToSupabase 에러:', e);
-      } finally {
-        isSyncing = false;
-      }
+    function syncToSupabase() {
+      if (!cloudToken) return Promise.resolve();
+      const snapshot = JSON.parse(JSON.stringify(appData));
+      pendingCloudSaves++;
+      saveQueue = saveQueue.then(async () => {
+        if (cloudSaveFailed) return;
+        snapshot._revision = appData._revision;
+        try {
+          const result = await secureRequest('save', snapshot);
+          appData._revision = result.revision;
+        } catch (err) { cloudSaveFailed = true; alert('저장하지 못했습니다. '+err.message); }
+      }).finally(() => pendingCloudSaves--);
+      return saveQueue;
     }
 
-    // 실시간 변경 감지 (Realtime Subscription)
     function setupRealtimeSubscription() {
-      if (!supabaseClient || !isSupabaseConnected) return;
-      if (realtimeChannel) {
-        supabaseClient.removeChannel(realtimeChannel);
-      }
-      try {
-        realtimeChannel = supabaseClient
-          .channel('public:attendance_data')
-          .on('postgres_changes', {
-            event: '*',
-            schema: 'public',
-            table: SUPABASE_TABLE_NAME,
-            filter: `id=eq.${SUPABASE_ROW_ID}`
-          }, (payload) => {
-            if (payload.new && payload.new.payload) {
-              // 다른 기기에서 갱신된 데이터 반영
-              appData = normalizeAccountData(payload.new.payload);
-              localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-              renderCurrentView();
-              showToast(' 다른 기기의 출석 변경사항이 실시간 동기화되었습니다.');
-            }
-          })
-          .subscribe();
-      } catch (err) {
-        console.warn('Realtime subscription 설정 실패:', err);
-      }
+      if (securePollTimer) clearInterval(securePollTimer);
+      securePollTimer = setInterval(async () => {
+        if (!cloudToken || pendingCloudSaves || cloudSaveFailed || currentRole === 'entry' || document.querySelector('.modal-overlay:not(.hidden)')) return;
+        try {
+          const data = await fetchFromSupabase();
+          if (data && data._revision !== appData._revision) {
+            const program = appData.activeProgramId, session = appData.activeSessionId;
+            appData = data; appData.activeProgramId = program; appData.activeSessionId = session;
+            renderCurrentView();
+          }
+        } catch (err) { console.warn('자료 갱신을 잠시 기다립니다.'); }
+      }, 10000);
     }
 
-    /* Supabase Modal Controls */
     function openSupabaseModal() {
       loadSupabaseConfig();
       document.getElementById('supabaseUrlInput').value = supabaseConfig.url || '';
@@ -2035,93 +2006,35 @@
     async function saveAndTestSupabase() {
       const url = document.getElementById('supabaseUrlInput').value.trim();
       const key = document.getElementById('supabaseKeyInput').value.trim();
-
-      if (!url || !key) {
-        alert('Supabase URL과 Anon Key를 모두 입력해주세요.');
-        return;
-      }
-
-      saveSupabaseConfig(url, key);
-      showToast('Supabase 연결을 시도하는 중입니다...');
-      const ok = await initSupabaseClient();
-      if (ok) {
-        // 기존 로컬 데이터가 있다면 Supabase에 최초 업로드 여부 확인
-        const cloudData = await fetchFromSupabase();
-        if (!cloudData) {
-          // 클라우드에 아직 없으면 현재 데이터 업로드
-          await syncToSupabase();
-          showToast(' Supabase 연결 성공! 현재 데이터가 클라우드에 업로드되었습니다.');
-        } else {
-          // 클라우드에 데이터가 있으면 클라우드 데이터로 갱신
-          appData = normalizeAccountData(cloudData);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-          initAppUI();
-          showToast(' Supabase 연결 성공! 클라우드 최신 데이터를 불러왔습니다.');
+      if (!url || !key) return alert('프로젝트 주소와 공개 연결키를 입력해 주세요.');
+      if (key.startsWith('sb_secret_')) return alert('비밀키는 입력할 수 없습니다. 공개 연결키를 사용해 주세요.');
+      try {
+        if (key.startsWith('eyJ')) {
+          const claims = JSON.parse(atob(key.split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));
+          if (claims.role !== 'anon') return alert('공개 연결키만 사용할 수 있습니다.');
         }
-        closeSupabaseModal();
-      } else {
-        alert('Supabase 연결에 실패했습니다. URL, Key 및 테이블(attendance_data) 생성 여부를 확인해주세요.\n(supabase_schema.sql 가이드를 참고하세요)');
-      }
+      } catch (_) { return alert('공개 연결키 형식을 확인해 주세요.'); }
+      if (!key.startsWith('sb_publishable_') && !key.startsWith('eyJ')) return alert('공개 연결키 형식을 확인해 주세요.');
+      await logoutAdmin(); saveSupabaseConfig(url,key);
+      if (await initSupabaseClient()) {closeSupabaseModal(); alert('연결됐습니다. 다시 인증해 주세요.');}
+      else alert('연결을 확인해 주세요. 기존 자료는 그대로 보존됩니다.');
     }
 
-    function disconnectSupabase() {
-      if (confirm('Supabase 연동을 해제하고 브라우저 로컬 저장소 모드로 전환하시겠습니까?')) {
-        saveSupabaseConfig('', '');
-        supabaseClient = null;
-        if (realtimeChannel) {
-          try { supabaseClient?.removeChannel(realtimeChannel); } catch (e) {}
-          realtimeChannel = null;
-        }
-        setSupabaseStatus(false, '로컬 모드');
-        closeSupabaseModal();
-        showToast('로컬 저장소 모드로 전환되었습니다.');
-      }
+    async function disconnectSupabase() {
+      if (!confirm('연결을 해제할까요? 기존 자료는 보존됩니다.')) return;
+      await logoutAdmin(); saveSupabaseConfig('',''); supabaseClient=null;
+      setSupabaseStatus(false,'연결 해제'); closeSupabaseModal();
     }
 
     /* ==========================================================================
        2. INITIALIZATION & STORAGE
        ========================================================================== */
     async function loadData() {
-      // 1. 먼저 로컬 스토리지 데이터 로드 (즉시 렌더링 지원)
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        try {
-          appData = normalizeAccountData(JSON.parse(stored));
-        } catch (e) {
-          appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        }
-      } else {
-        appData = JSON.parse(JSON.stringify(DEFAULT_DATA));
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      }
-
-      // 계정 및 기관 정보 하위 호환성 보강
-      if (!appData.orgName) appData.orgName = DEFAULT_ORG_NAME;
-      if (!appData.orgSecurityCode) appData.orgSecurityCode = DEFAULT_ORG_SECURITY_CODE;
-      if (!appData.masterAccount) appData.masterAccount = { ...DEFAULT_MASTER_ACCOUNT };
-      if (!appData.generalAdmins || !Array.isArray(appData.generalAdmins)) {
-        appData.generalAdmins = [ ...DEFAULT_GENERAL_ADMINS ];
-      }
-
-      // 2. Supabase가 연결되어 있다면 클라우드 최신본으로 백그라운드 동기화
-      if (isSupabaseConnected && supabaseClient) {
-        const cloudData = await fetchFromSupabase();
-        if (cloudData) {
-          appData = normalizeAccountData(cloudData);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-          renderCurrentView();
-        }
-      }
+      // 인증 전에는 참여자 자료나 비밀번호를 브라우저 저장소에서 읽지 않는다.
+      appData = {orgName:'전자출석부',programs:[],generalAdmins:[],masterAccount:{}};
     }
 
-    function saveData() {
-      // 1. 로컬 저장 (오프라인/즉각 반응)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-      // 2. 수파베이스 클라우드 동기화 (연결된 경우)
-      if (isSupabaseConnected && supabaseClient) {
-        syncToSupabase();
-      }
-    }
+    function saveData() { return syncToSupabase(); }
 
     function renderCurrentView() {
       populateGlobalSelectors();
@@ -2136,7 +2049,7 @@
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
       const downloadAnchor = document.createElement('a');
       downloadAnchor.setAttribute("href", dataStr);
-      downloadAnchor.setAttribute("download", `senior_attendance_backup_${new Date().toISOString().slice(0,10)}.json`);
+      downloadAnchor.setAttribute("download", `전자출석부 백업_${new Date().toISOString().slice(0,10)}.json`);
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
@@ -2151,20 +2064,19 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const parsed = JSON.parse(e.target.result);
           if (parsed && parsed.programs) {
-            appData = normalizeAccountData(parsed);
-            if (!appData.adminPassword) appData.adminPassword = DEFAULT_ADMIN_PASSWORD;
-            saveData();
-            initApp();
+            await saveQueue;
+            await secureRequest('save',{...parsed,_revision:appData._revision});
+            await refreshSecureData(); populateGlobalSelectors();renderCurrentView();
             showToast('데이터 복원이 성공적으로 완료되었습니다.');
           } else {
             alert('올바르지 않은 전자출석부 백업 파일 형식입니다.');
           }
         } catch (err) {
-          alert('JSON 파일 해석 오류: ' + err.message);
+          alert('복원 실패: ' + err.message);
         }
       };
       reader.readAsText(file);
@@ -2205,7 +2117,10 @@
     function switchRole(role) {
       if (role === 'kiosk' && !attendanceAccess) return showEntryScreen();
       if (role === 'admin' && !isAdminLoggedIn) return tryEnterAdminMode();
-      if (role === 'kiosk') clearManagementLogin();
+      if (role === 'kiosk') {
+        if (cloudToken) saveQueue.then(()=>secureRequest('attendance')).catch(err=>{alert(err.message);logoutAdmin();});
+        clearManagementLogin();
+      }
       currentRole = role;
       document.getElementById('roleNavigation').classList.toggle('hidden', currentAdminRole === 'master');
       document.getElementById('programNavigation').classList.toggle('hidden', currentAdminRole === 'master');
@@ -2245,42 +2160,43 @@
       document.getElementById('adminLoginModal').classList.add('hidden');
     }
 
-    function handleAdminLogin(event) {
+    async function handleAdminLogin(event) {
       event.preventDefault();
       const type = document.getElementById('loginAdminRoleType').value;
       const username = document.getElementById('adminUsernameInput').value.trim();
       const password = document.getElementById('adminPasswordInput').value;
-      const account = type === 'master' ? appData.masterAccount : (appData.generalAdmins || []).find(a => a.username === username);
-      if (!account || account.username !== username || account.password !== password) {
-        alert('아이디 또는 비밀번호가 맞지 않습니다. 다시 입력해 주세요.');
-        return;
-      }
-      closeAdminLoginModal();
-      currentAdminRole = type;
-      currentAdminUser = account;
-      isAdminLoggedIn = true;
-      if (type === 'master') switchRole('admin');
-      else {
-        attendanceAccess = true;
-        switchRole(loginDestination === 'management' ? 'admin' : 'kiosk');
-      }
-      showToast(type === 'master' ? '관리자 인증을 완료했습니다.' : '담당자 인증을 완료했습니다.');
+      try {
+        if (!isSupabaseConnected && !(await initSupabaseClient())) throw new Error('데이터 연결을 확인해 주세요.');
+        const result = await secureRequest('login',{username,password,role:type,destination:loginDestination});
+        cloudToken = result.token; cloudSaveFailed = false;
+        await refreshSecureData();
+        populateGlobalSelectors();
+        localStorage.removeItem(STORAGE_KEY);
+        closeAdminLoginModal(); document.getElementById('adminPasswordInput').value='';
+        currentAdminRole=type; currentAdminUser=result.account; isAdminLoggedIn=true;
+        if (type==='master') switchRole('admin');
+        else { attendanceAccess=true; switchRole(loginDestination==='management'?'admin':'kiosk'); }
+        setupRealtimeSubscription();
+      } catch (err) { alert(err.message); }
     }
 
     function updateAdminRoleUI() {
       const master = currentAdminRole === 'master';
       document.getElementById('adminRoleIcon').innerHTML = master ? '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V6a4 4 0 0 1 8 0v4m-4 5v2"/></svg>' : '<svg class="line-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2"/></svg>';
       document.getElementById('adminRoleNameDisplay').textContent = master ? '관리자' : '담당자';
-      document.getElementById('adminRoleBadge').textContent = currentAdminUser?.username || '';
-      document.getElementById('adminRoleDescDisplay').textContent = master ? '담당자 계정을 등록하고 관리해 주세요.' : '프로그램, 참여자, 출석을 관리하고 출석부를 인쇄해 주세요.';
       document.querySelectorAll('.admin-subtab-btn').forEach(btn => btn.style.display = (btn.id === 'subtabBtnMaster') === master ? 'inline-block' : 'none');
       document.getElementById('accountPasswordButton').classList.toggle('hidden', master);
       document.getElementById('settingsLogoutButton').classList.toggle('hidden', !master);
     }
 
-    function logoutAdmin() {
+    async function logoutAdmin() {
+      await saveQueue;
+      const token=cloudToken; cloudToken='';
+      if (securePollTimer) {clearInterval(securePollTimer);securePollTimer=null;}
       showEntryScreen();
-      showToast('로그아웃했습니다.');
+      appData={orgName:'전자출석부',programs:[],generalAdmins:[],masterAccount:{}};
+      ['kioskGrid','a4PagesContainer','adminAccountsTableBody','adminParticipantsTableBody','adminAttendanceTableBody'].forEach(id=>{const n=document.getElementById(id);if(n)n.innerHTML='';});
+      if (token) {try {await secureRequest('logout',{},token);} catch (_) {}}
     }
 
     function openChangePasswordModal() {
@@ -2293,20 +2209,13 @@
       document.getElementById('changePasswordModal').classList.add('hidden');
     }
 
-    function handleChangePassword(event) {
-      event.preventDefault();
-      if (!isAdminLoggedIn || !currentAdminUser) return;
-      const current = document.getElementById('currPwInput').value;
-      const password = document.getElementById('newPwInput').value;
-      const confirmation = document.getElementById('newPwConfirmInput').value;
-      const account = (appData.generalAdmins || []).find(a => a.id === currentAdminUser.id);
-      if (!account || account.password !== current) return alert('현재 비밀번호가 맞지 않습니다.');
-      if (!password.trim() || password !== confirmation) return alert('새 비밀번호와 확인란을 똑같이 입력해 주세요.');
-      account.password = password;
-      currentAdminUser = account;
-      saveData();
-      closeChangePasswordModal();
-      showToast('비밀번호를 변경했습니다.');
+    async function handleChangePassword(event) {
+      event.preventDefault(); if (!isAdminLoggedIn) return;
+      const current=document.getElementById('currPwInput').value;
+      const password=document.getElementById('newPwInput').value;
+      if (password!==document.getElementById('newPwConfirmInput').value) return alert('새 비밀번호와 확인란을 똑같이 입력해 주세요.');
+      try {await secureRequest('change_password',{current,password});closeChangePasswordModal();showToast('비밀번호를 변경했습니다.');}
+      catch (err) {alert(err.message);}
     }
 
     function switchAdminTab(subtab) {
@@ -2344,6 +2253,9 @@
       renderAdminAccountsTable();
     }
 
+    function safeSignature(value) {
+      return typeof value==='string' && /^data:image\/(?:png|jpeg|webp);base64,[A-Za-z0-9+/=]+$/.test(value) ? value : '';
+    }
     function escapeHtml(text) {
       if (!text) return '';
       return String(text)
@@ -2376,17 +2288,17 @@
         tr.innerHTML = `
           <td style="text-align:center; font-weight:800; color:#64748b;">${idx + 1}</td>
           <td><strong>${escapeHtml(adm.username)}</strong></td>
-          <td>${escapeHtml(adm.memo ?? adm.name ?? '-')}</td>
           <td>
             <span style="font-family:monospace; background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:700;">
               ••••••••
             </span>
           </td>
           <td style="font-size:12px; color:#64748b;">${escapeHtml(adm.createdAt) || '-'}</td>
+          <td>${escapeHtml(adm.memo ?? adm.name ?? '-')}</td>
           <td style="text-align:center;">
             <div style="display:flex; justify-content:center; gap:6px;">
               <button class="btn btn-sm" onclick="openAdminAccountModal(${idx})">수정</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteAdminAccount(${idx})">삭제</button>
+              <button class="btn btn-sm btn-danger" onclick="deleteAdminAccount(${idx})">사용 중지</button>
             </div>
           </td>
         `;
@@ -2402,6 +2314,9 @@
       const editIdx = document.getElementById('editAdminIndex');
 
       editIdx.value = index;
+      document.getElementById('accPasswordLabel').textContent = index >= 0 ? '비밀번호' : '비밀번호 (필수)';
+      document.getElementById('accNumberInput').value = index >= 0 ? index + 1 : (appData.generalAdmins || []).length + 1;
+      document.getElementById('accCreatedAtInput').value = index >= 0 ? appData.generalAdmins[index].createdAt || '-' : '등록하면 자동으로 기록됩니다.';
 
       if (index >= 0) {
         const adm = appData.generalAdmins[index];
@@ -2409,8 +2324,12 @@
         submitBtn.textContent = '수정 완료';
         document.getElementById('accUsernameInput').value = adm.username;
         document.getElementById('accNameInput').value = adm.memo ?? adm.name ?? '';
-        document.getElementById('accPasswordInput').value = adm.password;
+        document.getElementById('accPasswordInput').value = '';
+        document.getElementById('accPasswordInput').required = false;
+        document.getElementById('accPasswordInput').placeholder = '바꿀 때만 입력해 주세요.';
       } else {
+        document.getElementById('accPasswordInput').required = true;
+        document.getElementById('accPasswordInput').placeholder = '비밀번호 입력';
         title.textContent = '새 담당자 계정 등록';
         submitBtn.textContent = '계정 등록';
         document.getElementById('accUsernameInput').value = '';
@@ -2428,86 +2347,33 @@
       document.getElementById('adminAccountModal').classList.add('hidden');
     }
 
-    function saveAdminAccount(e) {
-      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
-      if (e) e.preventDefault();
-      const index = parseInt(document.getElementById('editAdminIndex').value, 10);
-      const username = document.getElementById('accUsernameInput').value.trim();
-      const name = document.getElementById('accNameInput').value.trim();
-      const password = document.getElementById('accPasswordInput').value;
-
-      if (!username || !password.trim()) {
-        alert('아이디와 비밀번호를 모두 입력해 주세요.');
-        return;
-      }
-
-      if (!appData.generalAdmins) appData.generalAdmins = [];
-
-      // 아이디 중복 검사 (관리자 아이디 및 다른 담당자)
-      if (username === (appData.masterAccount?.username || 'master')) {
-        alert('관리자 아이디와 동일한 아이디는 사용할 수 없습니다.');
-        return;
-      }
-
-      const dupIdx = appData.generalAdmins.findIndex(a => a.username === username);
-      if (dupIdx !== -1 && dupIdx !== index) {
-        alert('이미 사용 중인 담당자 아이디입니다. 다른 아이디를 입력해 주세요.');
-        return;
-      }
-
-      if (index >= 0 && index < appData.generalAdmins.length) {
-        // 기존 계정 수정
-        appData.generalAdmins[index].username = username;
-        appData.generalAdmins[index].memo = name;
-        appData.generalAdmins[index].password = password;
-        showToast('담당자 계정을 수정했습니다.');
-      } else {
-        // 신규 계정 추가
-        const newAdmin = {
-          id: 'adm_' + Date.now(),
-          username: username,
-          memo: name,
-          password: password,
-          createdAt: new Date().toISOString().slice(0, 10)
-        };
-        appData.generalAdmins.push(newAdmin);
-        showToast('담당자 계정을 등록했습니다.');
-      }
-
-      saveData();
-      renderAdminAccountsTable();
-      closeAdminAccountModal();
+    async function saveAdminAccount(event) {
+      event.preventDefault(); if (!isAdminLoggedIn || currentAdminRole!=='master') return;
+      const index=Number(document.getElementById('editAdminIndex').value);
+      const username=document.getElementById('accUsernameInput').value.trim();
+      const password=document.getElementById('accPasswordInput').value;
+      const memo=document.getElementById('accNameInput').value.trim();
+      try {
+        await secureRequest('account_save',{id:index>=0?appData.generalAdmins[index].id:null,username,password,memo});
+        await refreshSecureData();renderAdminAccountsTable();closeAdminAccountModal();showToast('담당자 계정을 저장했습니다.');
+      } catch (err) {alert(err.message);}
     }
 
-    function deleteAdminAccount(index) {
-      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
-      if (index < 0 || index >= appData.generalAdmins.length) return;
-      const target = appData.generalAdmins[index];
-
-      if (confirm(`담당자 계정 [${target.username}]을(를) 삭제하시겠습니까?`)) {
-        appData.generalAdmins.splice(index, 1);
-        saveData();
-        renderAdminAccountsTable();
-        showToast('담당자 계정을 삭제했습니다.');
-      }
+    async function deleteAdminAccount(index) {
+      if (!isAdminLoggedIn || currentAdminRole!=='master') return;
+      const account=appData.generalAdmins[index]; if (!account || !confirm('담당자 계정 ['+account.username+']을 사용 중지할까요? 자료는 보존됩니다.')) return;
+      try {await secureRequest('account_archive',{id:account.id});await refreshSecureData();renderAdminAccountsTable();showToast('담당자 계정 사용을 중지했습니다.');}
+      catch (err) {alert(err.message);}
     }
 
-    function saveMasterAccountSettings(e) {
-      e.preventDefault();
-      if (!isAdminLoggedIn || currentAdminRole !== 'master') return;
-      const username = document.getElementById('masterUsernameInput').value.trim();
-      const current = document.getElementById('masterCurrentPasswordInput').value;
-      const password = document.getElementById('masterPasswordInput').value;
-      const confirmation = document.getElementById('masterConfirmPasswordInput').value;
-      if (current !== appData.masterAccount.password) return alert('현재 비밀번호가 맞지 않습니다.');
-      if (!username || !password.trim() || password !== confirmation) return alert('아이디를 입력하고 새 비밀번호와 확인란을 똑같이 입력해 주세요.');
-      if ((appData.generalAdmins || []).some(a => a.username === username)) return alert('담당자가 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.');
-      appData.masterAccount = { ...appData.masterAccount, username, password };
-      currentAdminUser = appData.masterAccount;
-      saveData();
-      renderAdminMasterSubtab();
-      updateAdminRoleUI();
-      showToast('관리자 계정을 변경했습니다. 다음 로그인부터 새 계정을 사용해 주세요.');
+    async function saveMasterAccountSettings(event) {
+      event.preventDefault(); if (!isAdminLoggedIn || currentAdminRole!=='master') return;
+      const username=document.getElementById('masterUsernameInput').value.trim();
+      const current=document.getElementById('masterCurrentPasswordInput').value;
+      const password=document.getElementById('masterPasswordInput').value;
+      if (!username || password!==document.getElementById('masterConfirmPasswordInput').value) return alert('아이디를 입력하고 새 비밀번호와 확인란을 똑같이 입력해 주세요.');
+      try {await secureRequest('change_password',{username,current,password});await refreshSecureData();renderAdminMasterSubtab();showToast('관리자 계정을 변경했습니다.');}
+      catch (err) {alert(err.message);}
     }
 
     /* ==========================================================================
@@ -2632,8 +2498,8 @@
 
       const opCount = getOperationalSessions(curProg).length;
       infoSpan.innerHTML = `
-        <span>기간: <strong>${curProg.startDate || '-'} ~ ${curProg.endDate || '-'}</strong></span> ·
-        <span>강사: <strong>${curProg.instructor || '-'}</strong></span> ·
+        <span>기간: <strong>${escapeHtml(curProg.startDate || '-')} ~ ${escapeHtml(curProg.endDate || '-')}</strong></span> ·
+        <span>강사: <strong>${escapeHtml(curProg.instructor || '-')}</strong></span> ·
         <span>정원: <strong>${(curProg.participants || []).length}명</strong></span> ·
         <span style="color:var(--color-sora-deep);">실운영: <strong>${opCount}회차</strong></span>
       `;
@@ -2645,7 +2511,7 @@
         const sessionLabel = curSess.isHoliday ? '휴강일' : `${curSess.round}회차 (${formatSessionDate(curSess.date)})`;
         kioskTitle.innerHTML = curSess.isHoliday
           ? `오늘은 <span class="accent-sora">휴강일</span>입니다`
-          : `<span class="accent-sora">${sessionLabel}</span>`;
+          : `<span class="accent-sora">${escapeHtml(sessionLabel)}</span>`;
         kioskSub.textContent = curSess.isHoliday
           ? '오늘은 휴강일로 지정되어 있어 출석 서명을 진행하지 않습니다.'
           : `환영합니다! 본인의 이름을 누르고 서명해 주세요.`;
@@ -2732,11 +2598,11 @@
         }
 
         const showMemberId = dupes.has(p.name) || p.memberId;
-        const memberIdLabel = showMemberId && p.memberId ? `<div class="tile-id">회원 ${p.memberId}</div>` : '';
+        const memberIdLabel = showMemberId && p.memberId ? `<div class="tile-id">회원 ${escapeHtml(p.memberId)}</div>` : '';
 
         tile.innerHTML = `
           ${memberIdLabel}
-          <div class="tile-name">${p.name}</div>
+          <div class="tile-name">${escapeHtml(p.name)}</div>
           ${statusBadge}
         `;
 
@@ -2960,15 +2826,15 @@
             <button class="btn btn-sm btn-danger" style="padding:2px 8px; font-size:11px;" onclick="deleteSessionRow(${idx})">삭제</button>
           </div>
           <div style="margin-bottom: 6px;">
-            <input type="date" value="${s.date}" style="font-size:13px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'date', this.value)">
+            <input type="date" value="${escapeHtml(s.date)}" style="font-size:13px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'date', this.value)">
           </div>
           <div style="margin-bottom: 6px;">
-            <input type="text" value="${s.note || ''}" placeholder="교육 내용/비고" style="font-size:12px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'note', this.value)">
+            <input type="text" value="${escapeHtml(s.note || '')}" placeholder="교육 내용/비고" style="font-size:12px; padding:5px 8px; width:100%;" onchange="updateSessionField(${idx}, 'note', this.value)">
           </div>
           <div>
             <label class="checkbox-label" style="font-size:12px; color:var(--color-pencil-gray);">
               <input type="checkbox" ${s.isHoliday ? 'checked' : ''} onchange="toggleSessionHoliday(${idx}, this.checked)">
-              휴강 지정 (회차 제외)
+              휴강 지정
             </label>
           </div>
         `;
@@ -3187,7 +3053,7 @@
       }
       const prog = getCurrentProgram();
       if (!prog) return;
-      if (confirm(`정말 [${prog.name}] 프로그램을 삭제하시겠습니까? 등록된 모든 참여자 및 출석 기록이 삭제됩니다.`)) {
+      if (confirm(`정말 [${escapeHtml(prog.name)}] 프로그램을 삭제하시겠습니까? 등록된 모든 참여자 및 출석 기록이 삭제됩니다.`)) {
         appData.programs = appData.programs.filter(p => p.id !== prog.id);
         appData.activeProgramId = appData.programs[0].id;
         saveData();
@@ -3219,16 +3085,16 @@
 
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td><strong>${p.name}</strong> ${showDupeWarning}</td>
-          <td>${p.memberId ? p.memberId : '<span style="color:#aaa;">-</span>'}</td>
-          <td>${p.phone ? p.phone : '<span style="color:#aaa;">-</span>'}</td>
-          <td>${p.note || ''}</td>
+          <td><strong>${escapeHtml(p.name)}</strong> ${showDupeWarning}</td>
+          <td>${p.memberId ? escapeHtml(p.memberId) : '<span style="color:#aaa;">-</span>'}</td>
+          <td>${p.phone ? escapeHtml(p.phone) : '<span style="color:#aaa;">-</span>'}</td>
+          <td>${escapeHtml(p.note || '')}</td>
           <td>${droppedBadge}</td>
           <td><strong style="color:var(--color-sora-deep);">${stats.rate}%</strong> (${stats.attended}/${stats.total}회)</td>
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:6px;">
-              <button class="btn btn-sm" onclick="openEditParticipantModal('${p.id}')">수정</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteParticipant('${p.id}')">삭제</button>
+              <button class="btn btn-sm" data-participant-id="${escapeHtml(p.id)}" onclick="openEditParticipantModal(this.dataset.participantId)">수정</button>
+              <button class="btn btn-sm btn-danger" data-participant-id="${escapeHtml(p.id)}" onclick="deleteParticipant(this.dataset.participantId)">삭제</button>
             </div>
           </td>
         `;
@@ -3326,7 +3192,7 @@
       const p = prog.participants.find(item => item.id === id);
       if (!p) return;
 
-      if (confirm(`정말 [${p.name}] 참여자를 삭제하시겠습니까? 관련 출석 기록도 함께 정리됩니다.`)) {
+      if (confirm(`정말 [${escapeHtml(p.name)}] 참여자를 삭제하시겠습니까? 관련 출석 기록도 함께 정리됩니다.`)) {
         prog.participants = prog.participants.filter(item => item.id !== id);
         saveData();
         renderAdminParticipantsSubtab();
@@ -3395,7 +3261,7 @@
             <table class="data-table" style="font-size:12px;">
               <thead><tr><th>이름</th><th>회원번호</th><th>연락처</th><th>비고</th></tr></thead>
               <tbody>
-                ${parsedExcelRows.slice(0, 5).map(r => `<tr><td>${r.name}</td><td>${r.memberId}</td><td>${r.phone}</td><td>${r.note}</td></tr>`).join('')}
+                ${parsedExcelRows.slice(0, 5).map(r => `<tr><td>${escapeHtml(r.name)}</td><td>${escapeHtml(r.memberId)}</td><td>${escapeHtml(r.phone)}</td><td>${escapeHtml(r.note)}</td></tr>`).join('')}
               </tbody>
             </table>
             ${parsedExcelRows.length > 5 ? `<div style="text-align:center; color:#777; font-size:11px; margin-top:4px;">... 외 ${parsedExcelRows.length - 5}명 추가 등록 대기</div>` : ''}
@@ -3446,7 +3312,7 @@
       const ws = XLSX.utils.json_to_sheet(templateData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "참여자등록양식");
-      XLSX.writeFile(wb, "노인복지관_출석부_참여자등록_서식.xlsx");
+      XLSX.writeFile(wb, "전자출석부 참여자 등록 서식.xlsx");
       showToast('엑셀 등록 서식이 다운로드되었습니다.');
     }
 
@@ -3487,7 +3353,7 @@
           attended++;
           statusText = '<span style="color:var(--color-sora-deep); font-weight:800;">출석 완료</span>';
           if (record.signature) {
-            sigThumb = `<img src="${record.signature}" class="sig-thumbnail" alt="서명">`;
+            sigThumb = `<img src="${safeSignature(record.signature)}" class="sig-thumbnail" alt="서명">`;
           }
         } else if (isAbsent) {
           absent++;
@@ -3498,19 +3364,19 @@
         }
 
         const tr = document.createElement('tr');
-        const showId = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-weight:bold;">(동명이인: ${p.memberId || '회원번호 없음'})</span>` : '';
+        const showId = dupes.has(p.name) ? `<span style="color:var(--color-danger); font-weight:bold;">(동명이인: ${escapeHtml(p.memberId || '회원번호 없음')})</span>` : '';
 
         tr.innerHTML = `
           <td>${idx + 1}</td>
-          <td><strong>${p.name}</strong> ${showId}</td>
-          <td>${p.memberId || '-'}</td>
-          <td>${p.phone || '-'}</td>
+          <td><strong>${escapeHtml(p.name)}</strong> ${showId}</td>
+          <td>${escapeHtml(p.memberId || '-')}</td>
+          <td>${escapeHtml(p.phone || '-')}</td>
           <td>${statusText}</td>
           <td>${sigThumb}</td>
           <td style="text-align: center;">
             <div style="display:inline-flex; gap:6px;">
-              <button class="btn btn-sm btn-sora" onclick="adminOpenSign('${p.id}')">서명 돕기</button>
-              <button class="btn btn-sm ${isAbsent ? 'btn-sora' : 'btn-danger'}" onclick="adminToggleAbsent('${p.id}')">
+              <button class="btn btn-sm btn-sora" data-participant-id="${escapeHtml(p.id)}" onclick="adminOpenSign(this.dataset.participantId)">서명 돕기</button>
+              <button class="btn btn-sm ${isAbsent ? 'btn-sora' : 'btn-danger'}" data-participant-id="${escapeHtml(p.id)}" onclick="adminToggleAbsent(this.dataset.participantId)">
                 ${isAbsent ? '결석 취소' : '결석 처리'}
               </button>
             </div>
@@ -3614,6 +3480,8 @@
     }
 
     function renderA4PrintPages() {
+      const orientation = document.getElementById('printOrientation').value === 'portrait' ? 'portrait' : 'landscape';
+      document.getElementById('printPageStyle').textContent = `@media print { @page { size: A4 ${orientation}; margin: 10mm 12mm; } }`;
       const container = document.getElementById('a4PagesContainer');
       const prog = getCurrentProgram();
       container.innerHTML = '';
@@ -3641,7 +3509,7 @@
 
       sessionChunks.forEach((chunkSessions, pageIndex) => {
         const pageDiv = document.createElement('div');
-        pageDiv.className = 'a4-landscape-page';
+        pageDiv.className = 'a4-landscape-page' + (orientation === 'portrait' ? ' a4-portrait-page' : '');
 
         const totalPages = sessionChunks.length;
         const pageRoundRange = `${chunkSessions[0].round}회차 ~ ${chunkSessions[chunkSessions.length - 1].round}회차`;
@@ -3649,24 +3517,25 @@
         pageDiv.innerHTML = `
           <!-- Header Area -->
           <div class="a4-header">
-            <h2 class="a4-title">노인복지관 프로그램 출석부 (${pageRoundRange})</h2>
+            <h2 class="a4-title">${escapeHtml(prog.name)} 출석부</h2>
+            <div>${pageRoundRange}</div>
           </div>
 
           <!-- Program Meta Info Table -->
           <table class="a4-meta-table">
             <tr>
               <th>프로그램명</th>
-              <td colspan="3"><strong>${prog.name}</strong></td>
+              <td colspan="3"><strong>${escapeHtml(prog.name)}</strong></td>
               <th>운영기간</th>
-              <td>${prog.startDate || ''} ~ ${prog.endDate || ''}</td>
+              <td>${escapeHtml(prog.startDate || '')} ~ ${escapeHtml(prog.endDate || '')}</td>
             </tr>
             <tr>
               <th>담당자</th>
-              <td>${prog.manager || '-'}</td>
+              <td>${escapeHtml(prog.manager || '-')}</td>
               <th>강사명</th>
-              <td>${prog.instructor || '-'}</td>
+              <td>${escapeHtml(prog.instructor || '-')}</td>
               <th>교육장소</th>
-              <td>${prog.location || '-'} (${prog.time || ''})</td>
+              <td>${escapeHtml(prog.location || '-')} (${escapeHtml(prog.time || '')})</td>
             </tr>
           </table>
 
@@ -3681,7 +3550,7 @@
                 ${chunkSessions.map(s => `
                   <th>
                     ${s.round}회차<br>
-                    <span style="font-size:10px; font-weight:normal; color:#555;">${s.date ? s.date.slice(5) : ''}</span>
+                    <span style="font-size:10px; font-weight:normal; color:#555;">${escapeHtml(s.date ? s.date.slice(5) : '')}</span>
                   </th>
                 `).join('')}
                 ${showRate ? '<th style="width: 55px;">출석률</th>' : ''}
@@ -3695,9 +3564,9 @@
                 return `
                   <tr style="${isDropped ? 'background-color: #fafafa;' : ''}">
                     <td>${idx + 1}</td>
-                    <td><strong>${p.name}</strong></td>
-                    ${showMemberId ? `<td>${p.memberId || '-'}</td>` : ''}
-                    ${showPhone ? `<td>${p.phone || '-'}</td>` : ''}
+                    <td><strong>${escapeHtml(p.name)}</strong></td>
+                    ${showMemberId ? `<td>${escapeHtml(p.memberId || '-')}</td>` : ''}
+                    ${showPhone ? `<td>${escapeHtml(p.phone || '-')}</td>` : ''}
                     ${chunkSessions.map(s => {
                       const key = `${p.id}_${s.id}`;
                       const record = prog.records[key];
@@ -3707,7 +3576,7 @@
                         return `<td class="text-dropped" title="중도포기">-</td>`;
                       } else if (record && record.status === 'attended') {
                         if (record.signature) {
-                          return `<td class="a4-sig-cell"><img src="${record.signature}" alt="서명"></td>`;
+                          return `<td class="a4-sig-cell"><img src="${safeSignature(record.signature)}" alt="서명"></td>`;
                         } else {
                           return `<td><span style="font-size:10px; font-weight:bold;">서명</span></td>`;
                         }
@@ -3719,7 +3588,7 @@
                     }).join('')}
                     ${showRate ? `<td><strong>${stats.rate}%</strong></td>` : ''}
                     <td style="font-size:10px; color:#555;">
-                      ${isDropped ? '중도포기' : (p.note || '')}
+                      ${isDropped ? '중도포기' : escapeHtml(p.note || '')}
                     </td>
                   </tr>
                 `;
@@ -3729,7 +3598,6 @@
 
           <!-- Footer Area -->
           <div class="a4-footer">
-            <div>* 비고: 중도포기자는 하단에 배치되며, 전체 운영 회차 기준으로 출석률이 자동 계산됩니다.</div>
             <div>페이지: ${pageIndex + 1} / ${totalPages} · 인쇄일자: ${new Date().toISOString().slice(0,10)}</div>
           </div>
         `;
@@ -3738,6 +3606,7 @@
     }
 
     function triggerPrint() {
+      renderA4PrintPages();
       window.print();
     }
 
@@ -3755,28 +3624,8 @@
     }
 
     async function initApp() {
-      await loadData();
-      updateOrgBrandDisplay();
-      populateGlobalSelectors();
-      initSignatureCanvas();
-      showEntryScreen();
-
-      // Supabase 클라우드 동기화 비동기 초기화
-      initSupabaseClient().then(async connected => {
-        if (connected) {
-          const cloudData = await fetchFromSupabase();
-          if (cloudData) {
-            appData = normalizeAccountData(cloudData);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
-            initAppUI();
-            showToast(' Supabase 클라우드와 실시간 연결되었습니다.');
-          } else {
-            // 클라우드에 아직 데이터가 없으면 현재 데이터로 최초 시드 업로드
-            await syncToSupabase();
-            showToast(' Supabase에 초기 출석 데이터가 업로드되었습니다.');
-          }
-        }
-      });
+      await loadData(); updateOrgBrandDisplay(); populateGlobalSelectors();initSignatureCanvas();showEntryScreen();
+      await initSupabaseClient();
     }
 
     function initAppUI() {

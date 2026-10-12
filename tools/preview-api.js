@@ -1,0 +1,40 @@
+// 개발 미리보기 전용. 실제 수파베이스에 요청하지 않는다.
+// 이 파일은 배포용 index.html에 포함하지 않는다.
+(() => {
+  let state, revision=1, serial=1;
+  const accounts=[{id:'master',username:'master',password:'master1234',role:'master'},
+    {id:'adm_001',username:'admin',password:'1234',role:'general',memo:'기본 담당자',createdAt:'2026-10-12'}];
+  const sessions=new Map();
+  const copy=x=>JSON.parse(JSON.stringify(x));
+  const clean=a=>{const {password,...rest}=a;return rest;};
+  window.supabase={createClient(){return {async rpc(name,args){
+    const {action,session_token:token,body}=args;
+    const ok=x=>({data:{ok:true,...x}}),fail=error=>({data:{ok:false,error}});
+    if(action==='status')return ok({secure:true});
+    state??=copy(DEFAULT_DATA);
+    if(action==='login'){
+      const a=accounts.find(a=>!a.disabled&&a.role===body.role&&a.username===body.username&&a.password===body.password);
+      if(!a)return fail('아이디 또는 비밀번호가 맞지 않습니다.');
+      const newToken='demo-'+serial++;sessions.delete(token);sessions.set(newToken,{account:a,scope:a.role==='master'?'master':body.destination==='management'?'management':'attendance'});
+      return ok({token:newToken,account:clean(a)});
+    }
+    const s=sessions.get(token);if(!s)return fail('다시 로그인해 주세요.');
+    if(action==='logout'){sessions.delete(token);return ok();}
+    if(action==='attendance'){s.scope='attendance';return ok();}
+    if(action==='get'){return ok({data:{...copy(state),adminPassword:undefined,orgSecurityCode:undefined,_revision:revision,
+      masterAccount:s.account.role==='master'?clean(s.account):{},generalAdmins:s.account.role==='master'?accounts.filter(a=>a.role==='general'&&!a.disabled).map(clean):[]}});}
+    if(action==='save'){if(body._revision!==revision)return fail('다른 기기에서 자료가 변경됐습니다.');state=copy(body);return ok({revision:++revision});}
+    if(action==='change_password'){
+      if(s.account.password!==body.current)return fail('현재 비밀번호가 맞지 않습니다.');
+      s.account.password=body.password;if(body.username)s.account.username=body.username;return ok();
+    }
+    if(s.account.role!=='master')return fail('관리자 인증이 필요합니다.');
+    if(action==='account_save'){
+      if(accounts.some(a=>a.username===body.username&&a.id!==body.id))return fail('이미 사용 중인 아이디입니다.');
+      let a=accounts.find(a=>a.id===body.id);if(!a){a={id:'adm_'+serial++,role:'general',createdAt:'2026-10-12 12:00:00'};accounts.push(a);}
+      a.username=body.username;a.memo=body.memo;if(body.password)a.password=body.password;return ok();
+    }
+    if(action==='account_archive'){const a=accounts.find(a=>a.id===body.id);if(a)a.disabled=true;return ok();}
+    return fail('지원하지 않는 요청입니다.');
+  }}}};
+})();

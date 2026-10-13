@@ -981,6 +981,37 @@
   </style>
   <style id="printPageStyle"></style>
   <style>
+    @media screen and (max-width:700px) {
+      main.main-content { padding:12px; }
+      .card, .kiosk-hero, .print-controls { padding:16px !important; }
+      .form-grid { grid-template-columns:minmax(0,1fr); }
+      .form-group, .form-group input, .form-group textarea { min-width:0; max-width:100%; }
+      input, select, textarea { font-size:16px; }
+      .admin-subtab-group { width:100%; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
+      .admin-subtab-btn { padding:10px 12px; }
+      .kiosk-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+      .participant-tile { min-height:130px; padding:18px 8px; }
+      .tile-name { font-size:24px; }
+      .tile-id { font-size:11px; padding:3px 6px; }
+      .modal-overlay { padding:12px; }
+      .modal-content { padding:20px; max-height:calc(100dvh - 24px); overflow-y:auto; }
+      #confirmNameModal .modal-content > div:last-child { flex-direction:column; }
+      #confirmNameModal .btn { width:100%; padding:14px 16px; }
+      .table-container { max-width:100%; }
+      table.data-table { min-width:620px; }
+      .print-options-bar { gap:14px; }
+      .print-options-bar > div { max-width:100%; flex-wrap:wrap; }
+      #a4PagesContainer { overflow-x:auto; }
+      #a4PagesContainer .a4-landscape-page { width:960px; max-width:none; }
+      #a4PagesContainer .a4-portrait-page { width:680px; }
+      #toast { max-width:calc(100vw - 24px); }
+    }
+    @media screen and (max-width:360px) {
+      .role-btn { font-size:13px; gap:4px; padding:8px 6px; }
+      .tile-name { font-size:22px; }
+    }
+  </style>
+  <style>
     @media screen {
       .card, .program-bar, .kiosk-hero { border-width:1px; box-shadow:0 2px 8px rgba(30,55,80,.04); }
       .card { padding:20px; margin-bottom:18px; }
@@ -1336,26 +1367,33 @@
             <div class="checkbox-group">
               <span style="font-size:13px; font-weight:800;">인쇄 항목 선택:</span>
               <label class="checkbox-label">
-                <input type="checkbox" id="chkPrintPhone" checked onchange="renderA4PrintPages()"> 연락처
+                <input type="checkbox" id="chkPrintMemberId" checked onchange="renderA4PrintPages()"> 회원번호
               </label>
               <label class="checkbox-label">
-                <input type="checkbox" id="chkPrintMemberId" checked onchange="renderA4PrintPages()"> 회원번호
+                <input type="checkbox" id="chkPrintPhone" checked onchange="renderA4PrintPages()"> 연락처
               </label>
               <label class="checkbox-label">
                 <input type="checkbox" id="chkPrintRate" checked onchange="renderA4PrintPages()"> 출석률
               </label>
+              <label class="checkbox-label">
+                <input type="checkbox" id="chkPrintNote" checked onchange="renderA4PrintPages()"> 비고
+              </label>
             </div>
 
             <!-- Page chunk size -->
-            <div style="display:flex; align-items:center; gap: 8px;">
-              <label style="font-size:13px; font-weight:800;">페이지당 회차:</label>
+            <details style="width:100%;border-top:1px solid var(--color-border, #e5e7eb);padding-top:12px;">
+              <summary style="cursor:pointer;font-size:13px;font-weight:800;color:var(--color-pencil-gray);">세부 인쇄 설정</summary>
+              <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:12px;">
+              <label for="printSessionsPerPage" style="font-size:13px; font-weight:800;">한 장에 넣을 회차:</label>
               <select id="printSessionsPerPage" onchange="renderA4PrintPages()">
                 <option value="6" selected>6회차 (권장, 큰 서명)</option>
                 <option value="8">8회차</option>
                 <option value="10">10회차</option>
                 <option value="12">12회차 (축소)</option>
               </select>
-            </div>
+              <span style="font-size:12px;color:var(--color-pencil-gray);">회차가 많을수록 서명 칸이 작아집니다.</span>
+              </div>
+            </details>
           </div>
         </div>
 
@@ -1368,12 +1406,12 @@
       <div id="adminAccountSubtab" class="admin-subtab-content" style="display:none;">
         <div class="card" style="max-width:640px;">
           <h3 class="card-title" style="margin-bottom:16px;">담당자 계정 관리</h3>
-          <div class="form-group"><label for="staffAccountUsername">아이디</label><input id="staffAccountUsername" type="text" readonly></div>
+          <div class="form-group"><label for="staffAccountUsername">아이디 (필수)</label><input id="staffAccountUsername" type="text" readonly></div>
           <form onsubmit="handleChangePassword(event)" style="display:grid;gap:12px;">
             <h4 style="margin:20px 0 16px;">비밀번호 변경</h4>
-            <div class="form-group"><label for="currPwInput">현재 비밀번호</label><input type="password" id="currPwInput" required autocomplete="current-password"></div>
-            <div class="form-group"><label for="newPwInput">새 비밀번호</label><input type="password" id="newPwInput" required minlength="4" maxlength="72" autocomplete="new-password" placeholder="4자 이상 입력해 주세요"></div>
-            <div class="form-group"><label for="newPwConfirmInput">새 비밀번호 확인</label><input type="password" id="newPwConfirmInput" required minlength="4" maxlength="72" autocomplete="new-password"></div>
+            <div class="form-group"><label for="currPwInput">현재 비밀번호 (필수)</label><input type="password" id="currPwInput" required autocomplete="current-password"></div>
+            <div class="form-group"><label for="newPwInput">새 비밀번호 (필수)</label><input type="password" id="newPwInput" required minlength="4" maxlength="72" autocomplete="new-password" placeholder="4자 이상 입력해 주세요"></div>
+            <div class="form-group"><label for="newPwConfirmInput">새 비밀번호 확인 (필수)</label><input type="password" id="newPwConfirmInput" required minlength="4" maxlength="72" autocomplete="new-password"></div>
             <button type="submit" class="btn btn-sora" style="justify-self:start;">비밀번호 변경</button>
           </form>
         </div>
@@ -1408,7 +1446,6 @@
                 <tr>
                   <th style="width: 60px;">번호</th>
                   <th>아이디</th>
-                  <th>비밀번호</th>
                   <th>등록일시</th>
                   <th>메모</th>
                   <th style="width: 140px; text-align: center;">관리</th>
@@ -1505,7 +1542,7 @@
         <span id="confirmTargetNameEcho" style="color: var(--color-sora-deep); font-weight: 800;">홍길동</span> 님이 맞으십니까?
       </p>
       <div style="display: flex; gap: 12px; justify-content: center;">
-        <button class="btn btn-lg" onclick="closeConfirmModal()">아닙니다</button>
+        <button class="btn btn-lg" style="white-space:nowrap;flex-shrink:0;" onclick="closeConfirmModal()">아닙니다</button>
         <button class="btn btn-sora btn-lg" onclick="proceedToSignature()">네, 접니다! (서명하기)</button>
       </div>
     </div>
@@ -1962,17 +1999,18 @@
       return (await secureRequest('get')).data;
     }
 
-    function syncToSupabase() {
-      if (!cloudToken) return Promise.resolve();
-      const snapshot = JSON.parse(JSON.stringify(appData));
+    function syncToSupabase(attendancePatch = null) {
+      if (!cloudToken) return Promise.resolve(false);
+      const snapshot = JSON.parse(JSON.stringify(attendancePatch && currentRole === 'kiosk' ? attendancePatch : appData));
       pendingCloudSaves++;
       saveQueue = saveQueue.then(async () => {
-        if (cloudSaveFailed) return;
+        if (cloudSaveFailed) return false;
         snapshot._revision = appData._revision;
         try {
           const result = await secureRequest('save', snapshot);
           appData._revision = result.revision;
-        } catch (err) { cloudSaveFailed = true; alert('저장하지 못했습니다. '+err.message); }
+          return true;
+        } catch (err) { cloudSaveFailed = true; alert('저장하지 못했습니다. '+err.message+' 새로고침 후 다시 시도해 주세요.'); return false; }
       }).finally(() => pendingCloudSaves--);
       return saveQueue;
     }
@@ -2035,7 +2073,7 @@
       appData = {orgName:'전자출석부',programs:[],generalAdmins:[],masterAccount:{}};
     }
 
-    function saveData() { return syncToSupabase(); }
+    function saveData(attendancePatch = null) { return syncToSupabase(attendancePatch); }
 
     function renderCurrentView() {
       populateGlobalSelectors();
@@ -2274,7 +2312,7 @@
       if (admins.length === 0) {
         tbody.innerHTML = `
           <tr>
-            <td colspan="6" style="text-align:center; padding:24px; color:#94a3b8;">
+            <td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">
               등록된 담당자 계정이 없습니다. 상단의 [+ 새 담당자 등록] 버튼을 눌러 계정을 생성해 주세요.
             </td>
           </tr>
@@ -2287,17 +2325,12 @@
         tr.innerHTML = `
           <td style="text-align:center; font-weight:800; color:#64748b;">${idx + 1}</td>
           <td><strong>${escapeHtml(adm.username)}</strong></td>
-          <td>
-            <span style="font-family:monospace; background:#f1f5f9; padding:4px 8px; border-radius:6px; font-weight:700;">
-              ••••••••
-            </span>
-          </td>
           <td style="font-size:12px; color:#64748b;">${escapeHtml(adm.createdAt) || '-'}</td>
           <td>${escapeHtml(adm.memo ?? adm.name ?? '-')}</td>
           <td style="text-align:center;">
             <div style="display:flex; justify-content:center; gap:6px;">
-              <button class="btn btn-sm" onclick="openAdminAccountModal(${idx})">수정</button>
-              <button class="btn btn-sm btn-danger" onclick="deleteAdminAccount(${idx})">사용 중지</button>
+              <button class="btn btn-sm" style="white-space:nowrap;" onclick="openAdminAccountModal(${idx})">수정</button>
+              <button class="btn btn-sm btn-danger" style="white-space:nowrap;" onclick="deleteAdminAccount(${idx})">사용 중지</button>
             </div>
           </td>
         `;
@@ -2497,10 +2530,10 @@
 
       const opCount = getOperationalSessions(curProg).length;
       infoSpan.innerHTML = `
-        <span>기간: <strong>${escapeHtml(curProg.startDate || '-')} ~ ${escapeHtml(curProg.endDate || '-')}</strong></span> ·
+        <span>기간: <strong>${escapeHtml(formatSessionDate(curProg.startDate) || '-')} ~ ${escapeHtml(formatSessionDate(curProg.endDate) || '-')}</strong></span> ·
         <span>강사: <strong>${escapeHtml(curProg.instructor || '-')}</strong></span> ·
         <span>정원: <strong>${(curProg.participants || []).length}명</strong></span> ·
-        <span style="color:var(--color-sora-deep);">실운영: <strong>${opCount}회차</strong></span>
+        <span style="color:var(--color-sora-deep);">총 수업 회차: <strong>${opCount}회차</strong></span>
       `;
 
       // Update Kiosk Title
@@ -2749,7 +2782,9 @@
       document.getElementById('sigGuideText').style.display = 'block';
     }
 
-    function submitAttendanceSignature() {
+    let isSubmittingAttendance = false;
+    async function submitAttendanceSignature() {
+      if (isSubmittingAttendance) return;
       if (!hasDrawn) {
         alert('서명을 진행해 주세요. 서명 상자 안에 이름을 적어주시면 됩니다.');
         return;
@@ -2765,16 +2800,28 @@
       const now = new Date();
       const timeStr = `${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')} ${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}`;
 
+      const previousRecord = prog.records[key];
+      const participantName = activeParticipantForSig.name;
       prog.records[key] = {
         status: 'attended',
         signature: dataUrl,
         timestamp: timeStr
       };
 
-      saveData();
-      closeSignatureModal();
-      showToast(` ${activeParticipantForSig.name} 님, 출석을 완료했습니다.`);
-      refreshActiveView();
+      isSubmittingAttendance = true;
+      try {
+        // 기존 기록 전체를 재전송하지 않고 이번 출석만 서버에서 검증·병합한다.
+        const saved = await saveData({programs:[{id:prog.id,records:{[key]:prog.records[key]}}]});
+        if (!saved) {
+          if (previousRecord === undefined) delete prog.records[key];
+          else prog.records[key] = previousRecord;
+          refreshActiveView();
+          return;
+        }
+        closeSignatureModal();
+        showToast(` ${participantName} 님, 출석을 완료했습니다.`);
+        refreshActiveView();
+      } finally { isSubmittingAttendance = false; }
     }
 
     /* ==========================================================================
@@ -2869,7 +2916,7 @@
       renderSessionScheduleCards();
       populateSessionSelector();
       updateProgramSummaryBadge();
-      showToast(isChecked ? '휴강일로 지정되었습니다 (실운영 회차에서 제외).' : '정상 회차로 전환되었습니다.');
+      showToast(isChecked ? '휴강일로 지정되었습니다 (총 수업 회차에서 제외).' : '정상 회차로 전환되었습니다.');
     }
 
     function addNewSessionRow() {
@@ -3529,10 +3576,11 @@
       const showPhone = document.getElementById('chkPrintPhone').checked;
       const showMemberId = document.getElementById('chkPrintMemberId').checked;
       const showRate = document.getElementById('chkPrintRate').checked;
+      const showNote = document.getElementById('chkPrintNote').checked;
       const chunkSize = parseInt(document.getElementById('printSessionsPerPage').value) || 6;
       const sessionSlots = Math.min(chunkSize, sessionsToPrint.length);
       const baseWidths = [5,8,...(showMemberId ? [10] : []),...(showPhone ? [14] : [])];
-      const trailingWidths = [...(showRate ? [7] : []),10];
+      const trailingWidths = [...(showRate ? [7] : []),...(showNote ? [10] : [])];
       const sessionWidth = (100 - [...baseWidths,...trailingWidths].reduce((sum,w)=>sum+w,0)) / sessionSlots;
       const columnWidths = [...baseWidths,...Array(sessionSlots).fill(sessionWidth),...trailingWidths];
 
@@ -3597,7 +3645,7 @@
                   </th>
                 ` : '<th aria-label="빈 회차"></th>').join('')}
                 ${showRate ? '<th>출석률</th>' : ''}
-                <th>비고</th>
+                ${showNote ? '<th>비고</th>' : ''}
               </tr>
             </thead>
             <tbody>
@@ -3631,9 +3679,9 @@
                       }
                     }).join('')}
                     ${showRate ? `<td><strong>${stats.rate}%</strong></td>` : ''}
-                    <td style="font-size:10px; color:#555;">
+                    ${showNote ? `<td style="font-size:10px; color:#555;">
                       ${isDropped ? '중도포기' : escapeHtml(p.note || '')}
-                    </td>
+                    </td>` : ''}
                   </tr>
                 `;
               }).join('')}

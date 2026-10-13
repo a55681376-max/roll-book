@@ -23,7 +23,20 @@
     if(action==='attendance'){s.scope='attendance';return ok();}
     if(action==='get'){return ok({data:{...copy(state),adminPassword:undefined,orgSecurityCode:undefined,_revision:revision,
       masterAccount:s.account.role==='master'?clean(s.account):{},generalAdmins:s.account.role==='master'?accounts.filter(a=>a.role==='general'&&!a.disabled).map(clean):[]}});}
-    if(action==='save'){if(body._revision!==revision)return fail('다른 기기에서 자료가 변경됐습니다.');state=copy(body);return ok({revision:++revision});}
+    if(action==='save'){
+      if(body._revision!==revision)return fail('다른 기기에서 자료가 변경됐습니다.');
+      if(s.scope==='attendance'){
+        for(const p of body.programs){
+          const old=state.programs.find(x=>x.id===p.id);
+          for(const [key,record] of Object.entries(p.records||{})){
+            if(!old || !['attended','absent'].includes(record.status) ||
+              !old.participants.some(pt=>old.sessions.some(session=>key===pt.id+'_'+session.id)))return fail('출석 기록 형식이 올바르지 않습니다.');
+          }
+        }
+        for(const p of body.programs){const old=state.programs.find(x=>x.id===p.id);if(old)old.records={...old.records,...copy(p.records)};}
+      }else state=copy(body);
+      return ok({revision:++revision});
+    }
     if(action==='change_password'){
       if(s.account.password!==body.current)return fail('현재 비밀번호가 맞지 않습니다.');
       s.account.password=body.password;if(body.username)s.account.username=body.username;return ok();

@@ -20,6 +20,22 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  await run("login('general','admin','wrong')");assert.equal(run('currentRole'),'entry');
  await run("login('general','admin','1234')");assert.equal(run('currentRole'),'kiosk');assert.equal(run('isAdminLoggedIn'),false);
  assert.equal(run('appData.generalAdmins.length'),0);assert.equal(run('appData.adminPassword'),undefined);
+ // 오래된 잘못된 기록은 재전송하지 않고, 저장 실패한 서명은 화면에서도 되돌린다.
+ run(`renderKioskView=()=>{}; refreshActiveView=()=>{};
+   canvas={toDataURL:()=> 'data:image/png;base64,test'};hasDrawn=true;
+   activeParticipantForSig=getCurrentProgram().participants[0];
+   getCurrentProgram().records.legacy_orphan={status:'legacy'};`);
+ const signedKey=run('activeParticipantForSig.id+"_"+getCurrentSession().id');
+ await run('submitAttendanceSignature()');
+ assert.equal(run('cloudSaveFailed'),false);
+ assert.equal(run(`getCurrentProgram().records[${JSON.stringify(signedKey)}].status`),'attended');
+ await run('refreshSecureData()');
+ assert.equal(run(`getCurrentProgram().records[${JSON.stringify(signedKey)}].status`),'attended','Saved signature survives reload');
+ run(`activeParticipantForSig={id:'missing-participant',name:'저장 실패 테스트'};hasDrawn=true;`);
+ await run('submitAttendanceSignature()');
+ assert.equal(run('cloudSaveFailed'),true);
+ assert.equal(run('Object.keys(getCurrentProgram().records).some(k=>k.startsWith("missing-participant_"))'),false,'Failed signature is rolled back');
+ run('cloudSaveFailed=false;');
  run('tryEnterAdminMode()');assert.equal(node('adminLoginModal').classList.contains('hidden'),false);
  await run("login('general','admin','1234','management')");assert.equal(run('currentRole'),'admin');
  run("switchAdminTab('master')");assert.equal(run('currentAdminTab'),'program');
@@ -55,6 +71,10 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  assert.equal(attendanceColumns(page),attendanceColumns(second),'Last page retains the same column widths');
  assert.equal((second.innerHTML.match(/aria-label="빈 회차"/g)||[]).length,4);
  assert(page.innerHTML.includes('금요일 10:00-12:00'));assert(!page.innerHTML.includes('1회차 ~ 6회차'));
+ node('chkPrintNote').checked=false;node('a4PagesContainer').children=[];run('renderA4PrintPages()');
+ assert(!node('a4PagesContainer').children[0].innerHTML.includes('<th>비고</th>'));
+ node('chkPrintNote').checked=true;node('a4PagesContainer').children=[];run('renderA4PrintPages()');
+ assert(node('a4PagesContainer').children[0].innerHTML.includes('<th>비고</th>'));
  assert.equal(run("formatProgramSchedule({daysOfWeek:[5,1,5],time:'10:00 ~ 11:00'})"),'월요일, 금요일 10:00-11:00');
  assert.equal(run("formatProgramSchedule({})"),'-');
  node('printOrientation').value='landscape';run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 landscape'));

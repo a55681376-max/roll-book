@@ -79,6 +79,13 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  assert.equal(run("formatProgramSchedule({})"),'-');
  node('printOrientation').value='landscape';run('renderA4PrintPages()');assert(node('printPageStyle').textContent.includes('A4 landscape'));
  await run('logoutAdmin()');assert.equal(run('cloudToken'),'');assert.equal(run('appData.programs.length'),0);
+ const holidayUrls=[];ctx.AbortSignal=AbortSignal;
+ ctx.fetch=async url=>{holidayUrls.push(url);return {ok:true,json:async()=>({year:2026,holidays:calendars[2026]})};};
+ ctx.originalSecureRequest=run('secureRequest');ctx.fileHolidayCalls=[];ctx.testCalendars=calendars;
+ run("secureRequest=async(action,body)=>{fileHolidayCalls.push({action,body});return {ok:true,year:body.year,holidays:testCalendars[body.year]};}");
+ ctx.window.location={protocol:'file:'};await run('fetchKoreanHolidays(2026)');assert.equal(ctx.fileHolidayCalls[0].action,'holidays');assert.equal(ctx.fileHolidayCalls[0].body.year,2026);assert.equal(holidayUrls.length,0);
+ run('secureRequest=originalSecureRequest');
+ ctx.window.location={protocol:'http:'};await run('fetchKoreanHolidays(2026)');assert.equal(holidayUrls.at(-1),'/.netlify/functions/korean-holidays?year=2026');
  const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
  assert(!html.includes(".from(SUPABASE_TABLE_NAME)"));assert(!html.includes('master1234'));assert(!html.includes('sb_secret_')||html.includes("key.startsWith('sb_secret_')"));
  assert(!html.includes('SESSION SCHEDULE'));assert(!html.includes('회원번호는 필수 항목'));assert(!html.includes('서명 돕기'));

@@ -10,7 +10,7 @@ const base = html.match(/url: "([^"]+)"/)[1];
     console.error('Local check failed:', error.cause?.code || error.message);
     process.exitCode = 1;
   }
-  for (const [origin, status] of [['http://127.0.0.1:8765', 204], ['null', 403]]) {
+  for (const [origin, status] of [['http://127.0.0.1:8765', 204], ['null', 204], ['https://not-allowed.example',403]]) {
     const response = await fetch(base + '/functions/v1/rollbook-api', {
       method: 'OPTIONS', headers: {Origin: origin, 'Access-Control-Request-Method': 'POST'},
     });

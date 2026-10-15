@@ -2994,9 +2994,15 @@
     }
 
     async function fetchKoreanHolidays(year) {
-      const response = await fetch(`/.netlify/functions/korean-holidays?year=${year}`, {signal:AbortSignal.timeout(15000)});
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || '공휴일 자료를 확인하지 못했습니다. 기존 일정은 유지됩니다.');
+      // 파일 직접 실행에는 상대 주소의 웹 서버가 없으므로 기존 인증 API로 조회한다.
+      let result;
+      if (window.location?.protocol === 'file:') {
+        result = await secureRequest('holidays', {year});
+      } else {
+        const response = await fetch(`/.netlify/functions/korean-holidays?year=${year}`, {signal:AbortSignal.timeout(15000)});
+        result = await response.json();
+        if (!response.ok) throw new Error(result.error || '공휴일 자료를 확인하지 못했습니다. 기존 일정은 유지됩니다.');
+      }
       if (result.year !== year || !result.holidays || Object.keys(result.holidays).length < 10) throw new Error('공휴일 자료가 올바르지 않습니다. 기존 일정은 유지됩니다.');
       return result.holidays;
     }

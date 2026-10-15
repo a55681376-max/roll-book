@@ -7,5 +7,7 @@ if not errorlevel 1 (
   "%USERPROFILE%\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe" tools\local.cjs
 ) else (
   echo Node.js is required. Install Node.js or ask Codex to start the server.
+  pause
+  exit /b 1
 )
-pause
+if errorlevel 1 pause

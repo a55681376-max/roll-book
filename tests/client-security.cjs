@@ -26,6 +26,18 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
    activeParticipantForSig=getCurrentProgram().participants[0];
    getCurrentProgram().records.legacy_orphan={status:'legacy'};`);
  const signedKey=run('activeParticipantForSig.id+"_"+getCurrentSession().id');
+ const signedSessionId=run('getCurrentSession().id');
+ run(`var selectionSaveCalls=0; var actualSaveData=saveData;
+   saveData=()=>{selectionSaveCalls++;return Promise.resolve(true);};
+   document.getElementById('globalSessionSelect').value=getCurrentProgram().sessions[0].id;
+   onSessionChange();`);
+ assert.equal(run('appData.activeSessionId'),run('getCurrentProgram().sessions[0].id'));
+ run(`document.getElementById('globalProgramSelect').value=getCurrentProgram().id;onProgramChange();`);
+ assert.equal(run('selectionSaveCalls'),0,'Browsing sessions and programs never saves attendance');
+ assert.equal(run('cloudSaveFailed'),false);
+ run('saveData=actualSaveData;');
+ // 이후 서명 검사는 변경한 회차를 기준으로 진행한다.
+ run(`appData.activeSessionId=${JSON.stringify(signedSessionId)};`);
  await run('submitAttendanceSignature()');
  assert.equal(run('cloudSaveFailed'),false);
  assert.equal(run(`getCurrentProgram().records[${JSON.stringify(signedKey)}].status`),'attended');
@@ -91,3 +103,4 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  assert(!html.includes('SESSION SCHEDULE'));assert(!html.includes('회원번호는 필수 항목'));assert(!html.includes('서명 돕기'));
  console.log('PASS: secure login, account tab/password, holiday/substitute/weekend/year-boundary scheduling, attendance preservation, printing, unique IDs');
 })().catch(e=>{console.error(e);process.exitCode=1;});
+

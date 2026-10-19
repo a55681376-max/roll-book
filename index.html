@@ -837,11 +837,15 @@
     }
 
     .a4-sig-cell img {
-      max-height: 28px;
-      max-width: 65px;
+      width: 100%;
+      height: 42px;
+      max-height: 42px;
+      max-width: 100%;
+      object-fit: contain;
       display: block;
       margin: 0 auto;
     }
+    .a4-attendance-table td.a4-sig-cell { padding:2px; }
 
     .text-absent {
       color: #d32f2f;
@@ -976,6 +980,10 @@
       .a4-landscape-page:last-child { page-break-after:auto; }
       .a4-attendance-table thead { display:table-header-group; }
       .a4-attendance-table tr { break-inside:avoid; }
+      .a4-attendance-table td { height:10mm; padding:1mm; }
+      .a4-attendance-table th { height:9mm; padding:1mm; }
+      .a4-attendance-table td.a4-sig-cell { padding:.5mm; }
+      .a4-sig-cell img { height:9mm; max-height:9mm; }
       .a4-footer { justify-content:flex-end; }
     }
   </style>
@@ -2556,7 +2564,7 @@
       const prog = getCurrentProgram();
       const firstValid = prog.sessions.find(s => !s.isHoliday) || prog.sessions[0];
       appData.activeSessionId = firstValid ? firstValid.id : null;
-      saveData();
+      // 프로그램 선택은 현재 화면만 전환하며 출석 자료를 저장하지 않는다.
       populateSessionSelector();
       updateProgramSummaryBadge();
       refreshActiveView();
@@ -2565,7 +2573,7 @@
     function onSessionChange() {
       const select = document.getElementById('globalSessionSelect');
       appData.activeSessionId = select.value;
-      saveData();
+      // 회차를 조회하는 것만으로 기존 출석 기록 전체를 재전송하지 않는다.
       updateProgramSummaryBadge();
       refreshActiveView();
     }
@@ -2624,13 +2632,13 @@
         } else if (isAttended) {
           statusBadge = '<span class="tile-badge badge-attended">출석 완료</span>';
         } else if (isAbsent) {
-          statusBadge = '<span class="tile-badge badge-absent">결석 처리됨</span>';
+          statusBadge = '<span class="tile-badge badge-absent">결석</span>';
         } else {
           statusBadge = '<span class="tile-badge badge-pending">출석하기 </span>';
         }
 
         const showMemberId = dupes.has(p.name) || p.memberId;
-        const memberIdLabel = showMemberId && p.memberId ? `<div class="tile-id">회원 ${escapeHtml(p.memberId)}</div>` : '';
+        const memberIdLabel = showMemberId && p.memberId ? `<div class="tile-id">${escapeHtml(p.memberId)}</div>` : '';
 
         tile.innerHTML = `
           ${memberIdLabel}
@@ -3153,7 +3161,7 @@
 
       const dupes = getDuplicateNamesSet(prog.participants);
 
-      prog.participants.forEach((p, idx) => {
+      [...prog.participants].sort((a,b) => (a.name || '').localeCompare(b.name || '', 'ko')).forEach((p, idx) => {
         const stats = calculateAttendanceRate(prog, p);
         const tr = document.createElement('tr');
 
@@ -3599,11 +3607,19 @@
         sessionChunks.push(sessionsToPrint.slice(i, i + chunkSize));
       }
 
-      sessionChunks.forEach((chunkSessions, pageIndex) => {
+      // 서명 칸을 키워도 A4 높이를 넘지 않도록 참여자도 페이지별로 나눈다.
+      const rowsPerPage = orientation === 'portrait' ? 20 : 12;
+      const participantChunks = [];
+      for (let i=0; i<sortedParticipants.length; i+=rowsPerPage) {
+        participantChunks.push({participants:sortedParticipants.slice(i,i+rowsPerPage),offset:i});
+      }
+      if (!participantChunks.length) participantChunks.push({participants:[],offset:0});
+      const pages = sessionChunks.flatMap(chunkSessions => participantChunks.map(group=>({chunkSessions,...group})));
+      pages.forEach(({chunkSessions,participants,offset}, pageIndex) => {
         const pageDiv = document.createElement('div');
         pageDiv.className = 'a4-landscape-page' + (orientation === 'portrait' ? ' a4-portrait-page' : '');
 
-        const totalPages = sessionChunks.length;
+        const totalPages = pages.length;
         const pageSessions = Array.from({length:sessionSlots},(_,i)=>chunkSessions[i] || null);
 
         pageDiv.innerHTML = `
@@ -3655,12 +3671,12 @@
               </tr>
             </thead>
             <tbody>
-              ${sortedParticipants.map((p, idx) => {
+              ${participants.map((p, idx) => {
                 const stats = calculateAttendanceRate(prog, p);
                 const isDropped = p.isDropped;
                 return `
                   <tr style="${isDropped ? 'background-color: #fafafa;' : ''}">
-                    <td>${idx + 1}</td>
+                    <td>${offset + idx + 1}</td>
                     <td><strong>${escapeHtml(p.name)}</strong></td>
                     ${showMemberId ? `<td>${escapeHtml(p.memberId || '-')}</td>` : ''}
                     ${showPhone ? `<td>${escapeHtml(p.phone || '-')}</td>` : ''}
@@ -3736,3 +3752,4 @@
   </script>
 </body>
 </html>
+

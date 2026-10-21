@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS rollbook_private.feedback (
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+ALTER TABLE rollbook_private.feedback ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
+ALTER TABLE rollbook_private.feedback ADD COLUMN IF NOT EXISTS deleted_by text;
 CREATE INDEX IF NOT EXISTS feedback_author_created ON rollbook_private.feedback(author_id,created_at DESC);
 ALTER TABLE rollbook_private.feedback ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS feedback_no_browser_access ON rollbook_private.feedback;
@@ -39,12 +41,12 @@ BEGIN
   END IF;
   IF action='feedback_count' THEN
     RETURN jsonb_build_object('ok',true,'count',(SELECT count(*) FROM rollbook_private.feedback
-      WHERE author_id=account.id AND response_version>seen_version));
+      WHERE author_id=account.id AND deleted_at IS NULL AND response_version>seen_version));
   ELSIF action='feedback_list' THEN
     SELECT coalesce(jsonb_agg(to_jsonb(f) ORDER BY f.created_at DESC,f.id),'[]'::jsonb) INTO items
       FROM (SELECT f.*,a.username AS author FROM rollbook_private.feedback f
         JOIN rollbook_private.accounts a ON a.id=f.author_id
-        WHERE account.role='master' OR f.author_id=account.id
+        WHERE f.deleted_at IS NULL AND (account.role='master' OR f.author_id=account.id)
         ORDER BY f.created_at DESC,f.id LIMIT 200) f;
     RETURN jsonb_build_object('ok',true,'items',items);
   ELSIF action='feedback_create' THEN
@@ -61,10 +63,17 @@ BEGIN
     INSERT INTO rollbook_private.feedback(author_id,title,content)
       VALUES(account.id,btrim(body->>'title'),btrim(body->>'content')) RETURNING * INTO item;
     RETURN jsonb_build_object('ok',true,'id',item.id);
-  ELSIF action IN ('feedback_reply','feedback_read') THEN
-    SELECT * INTO item FROM rollbook_private.feedback WHERE id=(body->>'id')::uuid FOR UPDATE;
+  ELSIF action IN ('feedback_reply','feedback_read','feedback_delete') THEN
+    SELECT * INTO item FROM rollbook_private.feedback WHERE id=(body->>'id')::uuid AND deleted_at IS NULL FOR UPDATE;
     IF item.id IS NULL OR (account.role<>'master' AND item.author_id<>account.id) THEN
       RETURN jsonb_build_object('ok',false,'error','의견을 찾을 수 없습니다.');
+    END IF;
+    IF action='feedback_delete' THEN
+      IF (body->>'version')::integer IS DISTINCT FROM item.response_version THEN
+        RETURN jsonb_build_object('ok',false,'error','의견이 변경됐습니다. 목록을 다시 열어주세요.');
+      END IF;
+      UPDATE rollbook_private.feedback SET deleted_at=now(),deleted_by=account.id WHERE id=item.id;
+      RETURN jsonb_build_object('ok',true);
     END IF;
     IF action='feedback_read' THEN
       IF item.author_id=account.id THEN

@@ -2558,7 +2558,10 @@
             <strong>${escapeHtml(item.status)}</strong>
             <p style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px;">${escapeHtml(item.reply || '아직 답변이 없습니다.')}</p>
             ${item.reply?`<p style="font-size:12px;margin-top:8px;">${escapeHtml(feedbackDate(item.updated_at))}</p>`:''}
-          </div>`}`;
+          </div>`}
+        <div style="display:flex;justify-content:flex-end;margin-top:16px;">
+          <button type="button" class="btn btn-sm btn-danger" id="feedbackDeleteButton" data-id="${escapeHtml(item.id)}" onclick="deleteFeedback(this.dataset.id)">삭제</button>
+        </div>`;
       if (currentAdminRole!=='master' && item.response_version>item.seen_version) {
         try {
           await secureRequest('feedback_read',{id:item.id,version:item.response_version});
@@ -2566,6 +2569,20 @@
           item.seen_version=item.response_version;refreshFeedbackBadge();
         } catch(error) {if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
       }
+    }
+    async function deleteFeedback(id) {
+      if (feedbackBusy || !isAdminLoggedIn || currentRole!=='admin') return;
+      const item=feedbackItems.find(f=>f.id===id); if(!item)return;
+      if(!confirm('이 의견을 삭제할까요? 삭제하면 담당자와 관리자 목록에서 모두 사라집니다.'))return;
+      const token=cloudToken;
+      feedbackBusy=true;document.getElementById('feedbackDeleteButton').disabled=true;
+      try {
+        await secureRequest('feedback_delete',{id,version:item.response_version});
+        if(token!==cloudToken)return;
+        document.getElementById('feedbackDetail').innerHTML='';
+        await loadFeedback();await refreshFeedbackBadge();showToast('의견을 삭제했습니다.');
+      }catch(error){if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
+      finally{feedbackBusy=false;const button=document.getElementById('feedbackDeleteButton');if(button)button.disabled=false;}
     }
     async function replyFeedback(event,id) {
       event.preventDefault(); if (feedbackBusy) return;

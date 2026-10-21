@@ -24,9 +24,9 @@
     if(action==='attendance'){s.scope='attendance';return ok();}
     if(action.startsWith('feedback_')){
       if(s.account.role!=='master' && s.scope!=='management')return fail('담당자 인증 후 이용해 주세요.');
-      const owned=feedback.filter(f=>s.account.role==='master'||f.author_id===s.account.id);
+      const owned=feedback.filter(f=>!f.deleted_at&&(s.account.role==='master'||f.author_id===s.account.id));
       if(action==='feedback_list')return ok({items:copy(owned).reverse()});
-      if(action==='feedback_count')return ok({count:feedback.filter(f=>f.author_id===s.account.id&&f.response_version>f.seen_version).length});
+      if(action==='feedback_count')return ok({count:feedback.filter(f=>!f.deleted_at&&f.author_id===s.account.id&&f.response_version>f.seen_version).length});
       if(action==='feedback_create'){
         if(s.account.role!=='general')return fail('담당자만 의견을 보낼 수 있습니다.');
         if(!body.title?.trim()||body.title.length>100||!body.content?.trim()||body.content.length>5000)return fail('제목과 내용을 확인해 주세요.');
@@ -35,6 +35,10 @@
         return ok({id});
       }
       const item=owned.find(f=>f.id===body.id);if(!item)return fail('의견을 찾을 수 없습니다.');
+      if(action==='feedback_delete'){
+        if(body.version!==item.response_version)return fail('의견이 변경됐습니다. 목록을 다시 열어주세요.');
+        item.deleted_at=new Date().toISOString();item.deleted_by=s.account.id;return ok();
+      }
       if(action==='feedback_read'){
         if(item.author_id===s.account.id)item.seen_version=Math.max(item.seen_version,Math.min(item.response_version,body.version||0));return ok();
       }

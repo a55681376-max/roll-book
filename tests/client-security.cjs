@@ -111,6 +111,7 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  await run('logoutAdmin()');await run("login('general','admin','1234','management')");
  assert.equal((await run("secureRequest('feedback_list')")).items.length,0,'Other staff cannot see feedback');
  await assert.rejects(run("secureRequest('feedback_read',{id:feedbackTestId,version:1})"),/찾을 수/);
+ await assert.rejects(run("secureRequest('feedback_delete',{id:feedbackTestId,version:0})"),/찾을 수/);
  await run('logoutAdmin()');await run("login('master','master2','new-pass')");
  assert.equal((await run("secureRequest('feedback_list')")).items.length,1);
  await run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'완료',reply:'서명 크기를 확대했습니다.'})");
@@ -121,6 +122,17 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  await run('openFeedbackItem(feedbackTestId)');
  assert(node('feedbackDetail').innerHTML.includes('서명 크기를 확대했습니다.'));
  assert.equal((await run("secureRequest('feedback_count')")).count,0);
+ ctx.confirm=()=>false;
+ await run('deleteFeedback(feedbackTestId)');
+ assert.equal((await run("secureRequest('feedback_list')")).items.length,1,'Cancel retains feedback');
+ ctx.confirm=()=>true;
+ await assert.rejects(run("secureRequest('feedback_delete',{id:feedbackTestId,version:0})"),/변경/);
+ await run('deleteFeedback(feedbackTestId)');
+ assert.equal((await run("secureRequest('feedback_list')")).items.length,0,'Owner can delete own feedback');
+ const adminDelete=await run("secureRequest('feedback_create',{title:'관리자 삭제 검사',content:'test'})");ctx.adminDeleteId=adminDelete.id;
+ await run('logoutAdmin()');await run("login('master','master2','new-pass')");
+ await run('loadFeedback();');await run('openFeedbackItem(adminDeleteId)');await run('deleteFeedback(adminDeleteId)');
+ assert.equal((await run("secureRequest('feedback_list')")).items.length,0,'Admin can delete staff feedback');
  await run('logoutAdmin()');assert.equal(run('feedbackItems.length'),0);assert.equal(node('feedbackDetail').innerHTML,'');
  console.log('PASS: existing features; feedback ownership, admin replies, version conflict, unread/read, escaping and logout cleanup');
 })().catch(e=>{console.error(e);process.exitCode=1;});

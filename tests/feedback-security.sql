@@ -1,6 +1,7 @@
 -- 임시 테스트 계정과 의견만 만들고, 마지막에 전부 롤백한다.
 BEGIN;
 DO $$
+<<feedback_test>>
 DECLARE
   prefix text := '__feedback_test_'||gen_random_uuid()::text;
   first_token text := encode(extensions.gen_random_bytes(32),'hex');
@@ -37,6 +38,10 @@ BEGIN
   IF jsonb_array_length(r->'items')<>0 THEN RAISE EXCEPTION 'Cross-account list leak'; END IF;
   r:=public.rollbook_feedback('feedback_read',other_token,jsonb_build_object('id',id,'version',1));
   IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Cross-account read accepted'; END IF;
+  r:=public.rollbook_feedback('feedback_delete',other_token,jsonb_build_object('id',id,'version',0));
+  IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Cross-account delete accepted'; END IF;
+  r:=public.rollbook_feedback('feedback_delete',kiosk_token,jsonb_build_object('id',id,'version',0));
+  IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Attendance delete accepted'; END IF;
   r:=public.rollbook_feedback('feedback_reply',first_token,jsonb_build_object('id',id,'version',0,'status','완료','reply','test'));
   IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Staff reply accepted'; END IF;
   r:=public.rollbook_feedback('feedback_reply',master_token,jsonb_build_object('id',id,'version',0,'status','완료','reply','반영했습니다.'));
@@ -52,6 +57,25 @@ BEGIN
   PERFORM public.rollbook_feedback('feedback_read',first_token,jsonb_build_object('id',id,'version',1));
   r:=public.rollbook_feedback('feedback_count',first_token,'{}');
   IF (r->>'count')::integer<>1 THEN RAISE EXCEPTION 'Old read cleared newer answer'; END IF;
+  r:=public.rollbook_feedback('feedback_delete',first_token,jsonb_build_object('id',id,'version',1));
+  IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Stale delete accepted'; END IF;
+  r:=public.rollbook_feedback('feedback_delete',first_token,jsonb_build_object('id',id,'version',2));
+  IF r->>'ok'<>'true' THEN RAISE EXCEPTION 'Owner delete failed: %',r; END IF;
+  IF NOT EXISTS(SELECT 1 FROM rollbook_private.feedback f WHERE f.id=feedback_test.id::uuid AND f.deleted_at IS NOT NULL AND f.deleted_by=prefix||'a') THEN
+    RAISE EXCEPTION 'Delete must retain the record and actor';
+  END IF;
+  r:=public.rollbook_feedback('feedback_count',first_token,'{}');
+  IF (r->>'count')::integer<>0 THEN RAISE EXCEPTION 'Deleted feedback counted unread'; END IF;
+  r:=public.rollbook_feedback('feedback_list',first_token,'{}');
+  IF jsonb_array_length(r->'items')<>0 THEN RAISE EXCEPTION 'Owner still sees deleted feedback'; END IF;
+  r:=public.rollbook_feedback('feedback_list',master_token,'{}');
+  IF EXISTS(SELECT 1 FROM jsonb_array_elements(r->'items') f WHERE f->>'id'=feedback_test.id) THEN RAISE EXCEPTION 'Admin still sees deleted feedback'; END IF;
+  r:=public.rollbook_feedback('feedback_reply',master_token,jsonb_build_object('id',id,'version',2,'status','완료','reply','deleted'));
+  IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Reply to deleted feedback accepted'; END IF;
+  r:=public.rollbook_feedback('feedback_create',first_token,'{"title":"관리자 삭제 검사","content":"test"}');
+  id:=r->>'id';
+  r:=public.rollbook_feedback('feedback_delete',master_token,jsonb_build_object('id',id,'version',0));
+  IF r->>'ok'<>'true' THEN RAISE EXCEPTION 'Admin delete failed: %',r; END IF;
   UPDATE rollbook_private.accounts a SET disabled=true WHERE a.id=prefix||'a';
   r:=public.rollbook_feedback('feedback_list',first_token,'{}');
   IF r->>'ok'<>'false' THEN RAISE EXCEPTION 'Disabled account accepted'; END IF;

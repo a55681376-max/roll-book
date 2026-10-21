@@ -7,11 +7,11 @@ const db = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SE
 });
 // 사용자가 HTML 직접 실행을 허용했다. file:// 요청은 Origin: null로 전달된다.
 // null은 특정 파일/기기를 식별하지 않으므로 모든 데이터 권한은 아래 서버 인증으로 검사한다.
-const origins = new Set(['https://rollbook1.netlify.app', 'http://127.0.0.1:8765', 'http://localhost:8765', 'null']);
+const origins = new Set(['https://roll-book.netlify.app', 'http://127.0.0.1:8765', 'http://localhost:8765', 'null']);
 Deno.serve(async (req: Request) => {
   const origin = req.headers.get('origin') || '';
   const headers = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store',
-    'Access-Control-Allow-Origin': origins.has(origin) ? origin : 'https://rollbook1.netlify.app',
+    'Access-Control-Allow-Origin': origins.has(origin) ? origin : 'https://roll-book.netlify.app',
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS', 'Vary': 'Origin' };
   const response = (data: unknown, status = 200) => new Response(JSON.stringify(data), {status, headers});
@@ -26,7 +26,7 @@ Deno.serve(async (req: Request) => {
     // 공개 로그인 요청도 비밀번호·시도 제한을 DB에서 검사한다.
     // 그 외 요청은 무작위 세션 토큰의 해시·만료·계정 버전·권한을 DB에서 검사한다.
     // 파일 직접 실행의 공휴일 요청도 기존 세션 인증을 통과해야 한다.
-    const {data,error} = await db.rpc('rollbook_api', input.action === 'holidays'
+    const {data,error} = await db.rpc(input.action.startsWith('feedback_') ? 'rollbook_feedback' : 'rollbook_api', input.action === 'holidays'
       ? {action:'get',session_token:input.session_token,body:{}} : input);
     if (error) return response({ok:false,error:'요청을 처리하지 못했습니다.'});
     if (input.action === 'holidays' && data?.ok) {

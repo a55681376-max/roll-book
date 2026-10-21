@@ -5,6 +5,7 @@
   const accounts=[{id:'master',username:'master',password:'master1234',role:'master'},
     {id:'adm_001',username:'admin',password:'1234',role:'general',memo:'기본 담당자',createdAt:'2026-10-12'}];
   const sessions=new Map();
+  const feedback=[];
   const copy=x=>JSON.parse(JSON.stringify(x));
   const clean=a=>{const {password,...rest}=a;return rest;};
   window.supabase={createClient(){return {functions:{async invoke(name,{body:args}){
@@ -21,6 +22,30 @@
     const s=sessions.get(token);if(!s)return fail('다시 로그인해 주세요.');
     if(action==='logout'){sessions.delete(token);return ok();}
     if(action==='attendance'){s.scope='attendance';return ok();}
+    if(action.startsWith('feedback_')){
+      if(s.account.role!=='master' && s.scope!=='management')return fail('담당자 인증 후 이용해 주세요.');
+      const owned=feedback.filter(f=>s.account.role==='master'||f.author_id===s.account.id);
+      if(action==='feedback_list')return ok({items:copy(owned).reverse()});
+      if(action==='feedback_count')return ok({count:feedback.filter(f=>f.author_id===s.account.id&&f.response_version>f.seen_version).length});
+      if(action==='feedback_create'){
+        if(s.account.role!=='general')return fail('담당자만 의견을 보낼 수 있습니다.');
+        if(!body.title?.trim()||body.title.length>100||!body.content?.trim()||body.content.length>5000)return fail('제목과 내용을 확인해 주세요.');
+        const id='feedback-'+serial++;
+        feedback.push({id,author_id:s.account.id,author:s.account.username,title:body.title.trim(),content:body.content.trim(),status:'접수',reply:'',response_version:0,seen_version:0,created_at:new Date().toISOString(),updated_at:new Date().toISOString()});
+        return ok({id});
+      }
+      const item=owned.find(f=>f.id===body.id);if(!item)return fail('의견을 찾을 수 없습니다.');
+      if(action==='feedback_read'){
+        if(item.author_id===s.account.id)item.seen_version=Math.max(item.seen_version,Math.min(item.response_version,body.version||0));return ok();
+      }
+      if(action==='feedback_reply'){
+        if(s.account.role!=='master')return fail('관리자만 답변할 수 있습니다.');
+        if(body.version!==item.response_version)return fail('답변이 변경됐습니다. 목록을 다시 열어주세요.');
+        if(!['접수','완료','보류','불가'].includes(body.status)||!body.reply?.trim()||body.reply.length>5000)return fail('상태와 답변을 입력해 주세요.');
+        Object.assign(item,{reply:body.reply.trim(),status:body.status,response_version:item.response_version+1,updated_at:new Date().toISOString()});return ok();
+      }
+      return fail('지원하지 않는 요청입니다.');
+    }
     if(action==='get'){return ok({data:{...copy(state),adminPassword:undefined,orgSecurityCode:undefined,_revision:revision,
       masterAccount:s.account.role==='master'?clean(s.account):{},generalAdmins:s.account.role==='master'?accounts.filter(a=>a.role==='general'&&!a.disabled).map(clean):[]}});}
     if(action==='save'){

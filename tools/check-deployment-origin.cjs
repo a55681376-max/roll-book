@@ -1,0 +1,28 @@
+const fs = require('node:fs');
+const assert = require('node:assert/strict');
+const html = fs.readFileSync(require('node:path').join(__dirname, '../index.html'), 'utf8');
+const config = html.match(/const DEFAULT_SUPABASE_CONFIG = \{\s*url: "([^"]+)",\s*anonKey: "([^"]+)"/);
+const origin = 'https://roll-book.netlify.app';
+const endpoint = config[1] + '/functions/v1/rollbook-api';
+const request = (url, options={}) => fetch(url, {...options, signal:AbortSignal.timeout(15000)});
+(async () => {
+  const preflight = await request(endpoint, {method:'OPTIONS',headers:{Origin:origin,'Access-Control-Request-Method':'POST','Access-Control-Request-Headers':'authorization,apikey,content-type,x-client-info'}});
+  assert.equal(preflight.status,204);
+  assert.equal(preflight.headers.get('access-control-allow-origin'),origin);
+  console.log('PASS: new site CORS preflight');
+  const response = await request(endpoint,{method:'POST',headers:{Origin:origin,apikey:config[2],'Content-Type':'application/json'},body:JSON.stringify({action:'status',session_token:'',body:{}})});
+  assert.equal(response.status,200);
+  assert.equal(response.headers.get('access-control-allow-origin'),origin);
+  const status = await response.json();
+  assert.equal(status.ok,true);assert.equal(status.secure,true);
+  console.log('PASS: new site secure API connection');
+  const old = await request(endpoint,{method:'OPTIONS',headers:{Origin:'https://rollbook1.netlify.app','Access-Control-Request-Method':'POST'}});
+  assert.equal(old.status,403);
+  console.log('PASS: deleted site origin rejected');
+  const site = await request(origin);
+  assert.equal(site.status,200);
+  const deployed = await site.text();
+  assert(deployed.includes(config[1]),'Deployed site uses a different data server');
+  assert(deployed.includes('담당자 인증'));
+  console.log('PASS: deployed attendance page uses the existing data server');
+})().catch(error=>{console.error(error.message);process.exitCode=1;});

@@ -101,6 +101,27 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  const ids=[...html.matchAll(/(?<![\w-])id="([^"]+)"/g)].map(m=>m[1]);assert.equal(ids.length,new Set(ids).size);
  assert(!html.includes(".from(SUPABASE_TABLE_NAME)"));assert(!html.includes('master1234'));assert(!html.includes('sb_secret_')||html.includes("key.startsWith('sb_secret_')"));
  assert(!html.includes('SESSION SCHEDULE'));assert(!html.includes('회원번호는 필수 항목'));assert(!html.includes('서명 돕기'));
- console.log('PASS: secure login, account tab/password, holiday/substitute/weekend/year-boundary scheduling, attendance preservation, printing, unique IDs');
+ await run("login('general','staff2','staff-new','management')");
+ const opinion=await run(`secureRequest('feedback_create',{title:'<img src=x onerror=alert(1)>',content:'서명 칸을 키워주세요.'})`);
+ ctx.feedbackTestId=opinion.id;
+ await run('loadFeedback()');
+ assert(node('feedbackList').innerHTML.includes('&lt;img'));
+ assert(!node('feedbackList').innerHTML.includes('<img src=x'));
+ await assert.rejects(run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'완료',reply:'권한 없음'})"),/관리자/);
+ await run('logoutAdmin()');await run("login('general','admin','1234','management')");
+ assert.equal((await run("secureRequest('feedback_list')")).items.length,0,'Other staff cannot see feedback');
+ await assert.rejects(run("secureRequest('feedback_read',{id:feedbackTestId,version:1})"),/찾을 수/);
+ await run('logoutAdmin()');await run("login('master','master2','new-pass')");
+ assert.equal((await run("secureRequest('feedback_list')")).items.length,1);
+ await run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'완료',reply:'서명 크기를 확대했습니다.'})");
+ await assert.rejects(run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'보류',reply:'이전 화면의 답변'})"),/변경/);
+ await run('logoutAdmin()');await run("login('general','staff2','staff-new','management')");
+ assert.equal((await run("secureRequest('feedback_count')")).count,1);
+ await run('loadFeedback()');assert(node('feedbackList').innerHTML.includes('새 답변'));
+ await run('openFeedbackItem(feedbackTestId)');
+ assert(node('feedbackDetail').innerHTML.includes('서명 크기를 확대했습니다.'));
+ assert.equal((await run("secureRequest('feedback_count')")).count,0);
+ await run('logoutAdmin()');assert.equal(run('feedbackItems.length'),0);assert.equal(node('feedbackDetail').innerHTML,'');
+ console.log('PASS: existing features; feedback ownership, admin replies, version conflict, unread/read, escaping and logout cleanup');
 })().catch(e=>{console.error(e);process.exitCode=1;});
 

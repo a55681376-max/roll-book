@@ -1,4 +1,5 @@
 const http=require('http'),fs=require('fs');
+const port=Number(process.env.ROLLBOOK_PREVIEW_PORT || 8765);
 http.createServer((req,res)=>{
  if(req.url.startsWith('/.netlify/functions/korean-holidays?')) {
   const year=new URL(req.url,'http://localhost').searchParams.get('year');
@@ -11,4 +12,4 @@ http.createServer((req,res)=>{
  // Preview is isolated from the live database by a demo-only RPC adapter.
  html=html.replace('  <script>','  <script>'+fs.readFileSync('tools/preview-api.js','utf8')+'\n</script>\n  <script>');
  res.writeHead(200,{'Content-Type':'text/html; charset=utf-8'});res.end(html);
-}).listen(8765,'127.0.0.1',()=>console.log('Preview: http://127.0.0.1:8765 (cloud sync disabled)'));
+}).listen(port,'127.0.0.1',()=>console.log(`Preview: http://127.0.0.1:${port} (cloud sync disabled)`));

@@ -1156,7 +1156,10 @@
           <button class="admin-subtab-btn" id="subtabBtnAttendance" onclick="switchAdminTab('attendance')">출석 관리</button>
           <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button><button class="admin-subtab-btn hidden" id="subtabBtnMaster" onclick="switchAdminTab('master')">설정</button>
         </div>
-        <button class="admin-subtab-btn" id="subtabBtnAccount" onclick="switchAdminTab('account')">담당자 계정 관리</button>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="admin-subtab-btn" onclick="openFeedback()">의견함 <span class="feedback-unread" aria-live="polite"></span></button>
+          <button class="admin-subtab-btn" id="subtabBtnAccount" onclick="switchAdminTab('account')">담당자 계정 관리</button>
+        </div>
       </div>
 
       <!-- SUBTAB 1: PROGRAM MANAGEMENT -->
@@ -1427,6 +1430,7 @@
 
       <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
+        <button class="btn" style="margin-bottom:16px;" onclick="openFeedback()">의견함 <span class="feedback-unread" aria-live="polite"></span></button>
 
 <div class="card" style="margin-top:24px;margin-bottom:24px;"><h3 class="card-title" style="margin-bottom:16px;">데이터 관리</h3>
     <div class="header-actions" id="headerTools">
@@ -1537,6 +1541,24 @@
           <button type="submit" class="btn btn-sora">로그인</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <div id="feedbackModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="feedbackHeading">
+    <div class="modal-content" style="max-width:760px;max-height:90dvh;overflow-y:auto;">
+      <div class="card-header"><h3 id="feedbackHeading" class="card-title">의견함</h3><button class="btn btn-sm" onclick="closeFeedback()">닫기</button></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+        <button class="btn btn-sm" onclick="loadFeedback()" id="feedbackListButton">내 의견</button>
+        <button class="btn btn-sm btn-sora" id="feedbackWriteButton" onclick="showFeedbackWrite()">의견 쓰기</button>
+      </div>
+      <p id="feedbackMessage" role="status" style="font-size:14px;color:var(--color-pencil-gray);margin-bottom:12px;"></p>
+      <form id="feedbackWriteForm" class="hidden" onsubmit="submitFeedback(event)" style="margin-bottom:20px;">
+        <div class="form-group"><label for="feedbackTitle">제목</label><input id="feedbackTitle" type="text" required maxlength="100"></div>
+        <div class="form-group" style="margin:12px 0;"><label for="feedbackContent">내용</label><textarea id="feedbackContent" required maxlength="5000" rows="5" placeholder="불편한 점이나 바라는 점을 적어주세요."></textarea></div>
+        <button class="btn btn-sora" id="feedbackSubmitButton" type="submit">보내기</button>
+      </form>
+      <div id="feedbackList"></div>
+      <div id="feedbackDetail" class="hidden" style="margin-top:16px;"></div>
     </div>
   </div>
 
@@ -2026,6 +2048,7 @@
     function setupRealtimeSubscription() {
       if (securePollTimer) clearInterval(securePollTimer);
       securePollTimer = setInterval(async () => {
+        if (currentRole==='admin') refreshFeedbackBadge();
         if (!cloudToken || pendingCloudSaves || pendingScheduleGeneration || cloudSaveFailed || currentRole === 'entry' || document.querySelector('.modal-overlay:not(.hidden)')) return;
         try {
           const data = await fetchFromSupabase();
@@ -2145,6 +2168,8 @@
     let loginDestination = 'attendance';
 
     function clearManagementLogin() {
+      closeFeedback();
+      document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent='';});
       isAdminLoggedIn = false;
       currentAdminUser = null;
       currentAdminRole = 'general';
@@ -2154,6 +2179,8 @@
     }
 
     function showEntryScreen() {
+      closeFeedback();
+      document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent='';});
       attendanceAccess = false;
       clearManagementLogin();
       currentRole = 'entry';
@@ -2178,7 +2205,7 @@
       document.querySelectorAll('.view-panel').forEach(panel => panel.classList.remove('active'));
       document.getElementById(role === 'kiosk' ? 'kioskView' : 'adminView').classList.add('active');
       if (role === 'kiosk') renderKioskGrid();
-      else { updateAdminRoleUI(); switchAdminTab(currentAdminRole === 'master' ? 'master' : 'program'); }
+      else { updateAdminRoleUI(); switchAdminTab(currentAdminRole === 'master' ? 'master' : 'program'); refreshFeedbackBadge(); }
     }
 
     function tryEnterAdminMode() {
@@ -2427,6 +2454,133 @@
         appData.activeProgramId = prog.id;
       }
       return prog;
+    }
+
+    let feedbackItems = [];
+    let feedbackLoadVersion = 0;
+    let feedbackBusy = false;
+    function feedbackDate(value) {
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? '' : date.toLocaleString('ko-KR',{timeZone:'Asia/Seoul',year:'numeric',month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    }
+    async function refreshFeedbackBadge() {
+      const token = cloudToken;
+      if (!token || currentRole!=='admin') return;
+      try {
+        const result = await secureRequest('feedback_count');
+        if (token!==cloudToken || currentRole!=='admin') return;
+        document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent=result.count>0?'· 새 답변 '+result.count:'';});
+      } catch (_) { /* 의견함 접속 시 연결 오류를 안내한다. */ }
+    }
+    function closeFeedback() {
+      feedbackLoadVersion++;
+      document.getElementById('feedbackModal').classList.add('hidden');
+      document.getElementById('feedbackList').innerHTML='';
+      document.getElementById('feedbackDetail').innerHTML='';
+      document.getElementById('feedbackTitle').value='';
+      document.getElementById('feedbackContent').value='';
+      document.getElementById('feedbackMessage').textContent='';
+      feedbackItems=[];
+    }
+    function openFeedback() {
+      if (!isAdminLoggedIn || currentRole!=='admin') return;
+      document.getElementById('feedbackModal').classList.remove('hidden');
+      document.getElementById('feedbackListButton').textContent=currentAdminRole==='master'?'전체 의견':'내 의견';
+      document.getElementById('feedbackWriteButton').classList.toggle('hidden',currentAdminRole==='master');
+      loadFeedback();
+      document.getElementById('feedbackListButton').focus();
+    }
+    function showFeedbackWrite() {
+      if (currentAdminRole!=='general' || !isAdminLoggedIn) return;
+      document.getElementById('feedbackWriteForm').classList.remove('hidden');
+      document.getElementById('feedbackDetail').classList.add('hidden');
+      document.getElementById('feedbackList').innerHTML='';
+      document.getElementById('feedbackMessage').textContent='';
+      feedbackLoadVersion++;
+      document.getElementById('feedbackTitle').focus();
+    }
+    async function loadFeedback() {
+      const token=cloudToken, version=++feedbackLoadVersion;
+      document.getElementById('feedbackWriteForm').classList.add('hidden');
+      document.getElementById('feedbackDetail').classList.add('hidden');
+      document.getElementById('feedbackList').innerHTML='';
+      document.getElementById('feedbackMessage').textContent='불러오는 중…';
+      try {
+        const result=await secureRequest('feedback_list');
+        if (version!==feedbackLoadVersion || token!==cloudToken) return;
+        feedbackItems=result.items;
+        document.getElementById('feedbackMessage').textContent=feedbackItems.length?'최근 의견부터 표시합니다. (최대 200개)':'등록된 의견이 없습니다.';
+        document.getElementById('feedbackList').innerHTML=feedbackItems.map(item=>`
+          <button type="button" class="btn" data-id="${escapeHtml(item.id)}" onclick="openFeedbackItem(this.dataset.id)"
+            style="display:flex;width:100%;justify-content:space-between;text-align:left;margin-bottom:8px;gap:12px;">
+            <span style="min-width:0;overflow-wrap:anywhere;"><strong>${escapeHtml(item.title)}</strong>
+              ${currentAdminRole!=='master' && item.response_version>item.seen_version?'<span style="color:var(--color-sora-deep);font-size:12px;"> · 새 답변</span>':''}
+              <span style="display:block;font-size:12px;color:var(--color-pencil-gray);font-weight:500;">${currentAdminRole==='master'?escapeHtml(item.author)+' · ':''}${escapeHtml(feedbackDate(item.created_at))}</span>
+            </span><span style="white-space:nowrap;flex-shrink:0;font-size:13px;color:var(--color-sora-deep);">${escapeHtml(item.status)}</span>
+          </button>`).join('');
+        refreshFeedbackBadge();
+      } catch (error) {
+        if (version===feedbackLoadVersion && token===cloudToken) document.getElementById('feedbackMessage').textContent=error.message;
+      }
+    }
+    async function submitFeedback(event) {
+      event.preventDefault(); if (feedbackBusy) return;
+      const title=document.getElementById('feedbackTitle').value.trim();
+      const content=document.getElementById('feedbackContent').value.trim();
+      if (!title || !content) {document.getElementById('feedbackMessage').textContent='제목과 내용을 입력해 주세요.';return;}
+      feedbackBusy=true;
+      document.getElementById('feedbackSubmitButton').disabled=true;
+      const token=cloudToken;
+      try {
+        await secureRequest('feedback_create',{title,content});
+        if (token!==cloudToken) return;
+        document.getElementById('feedbackTitle').value='';document.getElementById('feedbackContent').value='';
+        await loadFeedback();showToast('의견을 보냈습니다.');
+      } catch (error) {if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
+      finally {feedbackBusy=false;document.getElementById('feedbackSubmitButton').disabled=false;}
+    }
+    async function openFeedbackItem(id) {
+      const item=feedbackItems.find(f=>f.id===id); if (!item) return;
+      const token=cloudToken;
+      document.getElementById('feedbackList').innerHTML='';
+      document.getElementById('feedbackMessage').textContent='';
+      const detail=document.getElementById('feedbackDetail');detail.classList.remove('hidden');
+      detail.innerHTML=`<h4 style="font-size:20px;overflow-wrap:anywhere;">${escapeHtml(item.title)}</h4>
+        <p style="font-size:12px;color:var(--color-pencil-gray);margin:8px 0;">${escapeHtml(item.author)} · ${escapeHtml(feedbackDate(item.created_at))}</p>
+        <p style="white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:20px;">${escapeHtml(item.content)}</p>
+        ${currentAdminRole==='master'?`
+          <form onsubmit="replyFeedback(event, this.dataset.id)" data-id="${escapeHtml(item.id)}" style="border-top:1px solid var(--color-border-light);padding-top:16px;">
+            <div class="form-group"><label for="feedbackStatus">상태</label><select id="feedbackStatus">${['접수','완료','보류','불가'].map(s=>`<option${s===item.status?' selected':''}>${s}</option>`).join('')}</select></div>
+            <div class="form-group" style="margin:12px 0;"><label for="feedbackReply">답변</label><textarea id="feedbackReply" required maxlength="5000" rows="5">${escapeHtml(item.reply)}</textarea></div>
+            <button class="btn btn-sora" id="feedbackReplyButton" type="submit">저장</button>
+          </form>`:`
+          <div style="background:var(--color-sora-light);padding:16px;border-radius:16px;">
+            <strong>${escapeHtml(item.status)}</strong>
+            <p style="white-space:pre-wrap;overflow-wrap:anywhere;margin-top:8px;">${escapeHtml(item.reply || '아직 답변이 없습니다.')}</p>
+            ${item.reply?`<p style="font-size:12px;margin-top:8px;">${escapeHtml(feedbackDate(item.updated_at))}</p>`:''}
+          </div>`}`;
+      if (currentAdminRole!=='master' && item.response_version>item.seen_version) {
+        try {
+          await secureRequest('feedback_read',{id:item.id,version:item.response_version});
+          if (token!==cloudToken) return;
+          item.seen_version=item.response_version;refreshFeedbackBadge();
+        } catch(error) {if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
+      }
+    }
+    async function replyFeedback(event,id) {
+      event.preventDefault(); if (feedbackBusy) return;
+      const item=feedbackItems.find(f=>f.id===id); if(!item || currentAdminRole!=='master')return;
+      const status=document.getElementById('feedbackStatus').value;
+      const reply=document.getElementById('feedbackReply').value.trim();
+      if(!reply){document.getElementById('feedbackMessage').textContent='답변을 입력해 주세요.';return;}
+      feedbackBusy=true;document.getElementById('feedbackReplyButton').disabled=true;
+      const token=cloudToken;
+      try {
+        await secureRequest('feedback_reply',{id,version:item.response_version,status,reply});
+        if(token!==cloudToken)return;
+        await loadFeedback();showToast('답변을 저장했습니다.');
+      }catch(error){if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
+      finally{feedbackBusy=false;const button=document.getElementById('feedbackReplyButton');if(button)button.disabled=false;}
     }
 
     function getCurrentSession() {

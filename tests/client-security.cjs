@@ -49,6 +49,8 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  assert.equal(run('Object.keys(getCurrentProgram().records).some(k=>k.startsWith("missing-participant_"))'),false,'Failed signature is rolled back');
  run('cloudSaveFailed=false;');
  run('tryEnterAdminMode()');assert.equal(node('adminLoginModal').classList.contains('hidden'),false);
+ assert.equal(node('adminUsernameInput').value,'admin');
+ assert.equal(node('adminUsernameInput').readOnly,true);
  await run("login('general','admin','1234','management')");assert.equal(run('currentRole'),'admin');
  run("switchAdminTab('master')");assert.equal(run('currentAdminTab'),'program');
  run("switchRole('kiosk');switchRole('admin')");assert.equal(run('currentRole'),'kiosk');
@@ -114,11 +116,14 @@ run(`renderKioskGrid=()=>{};renderAdminProgramSubtab=()=>{};renderAdminAccountsT
  await assert.rejects(run("secureRequest('feedback_delete',{id:feedbackTestId,version:0})"),/찾을 수/);
  await run('logoutAdmin()');await run("login('master','master2','new-pass')");
  assert.equal((await run("secureRequest('feedback_list')")).items.length,1);
+ assert.equal((await run("secureRequest('feedback_count')")).count,1);
+ await run('loadFeedback();');await run('openFeedbackItem(feedbackTestId)');
+ assert.equal((await run("secureRequest('feedback_count')")).count,0);
  await run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'완료',reply:'서명 크기를 확대했습니다.'})");
  await assert.rejects(run("secureRequest('feedback_reply',{id:feedbackTestId,version:0,status:'보류',reply:'이전 화면의 답변'})"),/변경/);
  await run('logoutAdmin()');await run("login('general','staff2','staff-new','management')");
  assert.equal((await run("secureRequest('feedback_count')")).count,1);
- await run('loadFeedback()');assert(node('feedbackList').innerHTML.includes('새 답변'));
+ await run('loadFeedback()');assert(!node('feedbackList').innerHTML.includes('새 답변'));
  await run('openFeedbackItem(feedbackTestId)');
  assert(node('feedbackDetail').innerHTML.includes('서명 크기를 확대했습니다.'));
  assert.equal((await run("secureRequest('feedback_count')")).count,0);

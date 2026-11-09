@@ -989,6 +989,10 @@
   </style>
   <style id="printPageStyle"></style>
   <style>
+    .feedback-tab { position:relative; }
+    .feedback-unread { position:absolute; top:5px; right:5px; width:8px; height:8px; border-radius:50%; background:#1674d1; }
+  </style>
+  <style>
     @media screen and (max-width:700px) {
       main.main-content { padding:12px; }
       .card, .kiosk-hero, .print-controls { padding:16px !important; }
@@ -1157,7 +1161,7 @@
           <button class="admin-subtab-btn" id="subtabBtnPrint" onclick="switchAdminTab('print')">인쇄</button><button class="admin-subtab-btn hidden" id="subtabBtnMaster" onclick="switchAdminTab('master')">설정</button>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button class="admin-subtab-btn" onclick="openFeedback()">의견함 <span class="feedback-unread" aria-live="polite"></span></button>
+          <button class="admin-subtab-btn feedback-tab" onclick="openFeedback()">의견함<span class="feedback-unread hidden" role="status" aria-label="읽지 않은 의견함 알림"></span></button>
           <button class="admin-subtab-btn" id="subtabBtnAccount" onclick="switchAdminTab('account')">담당자 계정 관리</button>
         </div>
       </div>
@@ -1430,9 +1434,7 @@
 
       <!-- SUBTAB 5: MASTER MANAGEMENT (관리자 전용: 기관 및 담당자 관리) -->
       <div id="adminMasterSubtab" class="admin-subtab-content" style="display: none;">
-        <button class="btn" style="margin-bottom:16px;" onclick="openFeedback()">의견함 <span class="feedback-unread" aria-live="polite"></span></button>
-
-<div class="card" style="margin-top:24px;margin-bottom:24px;"><h3 class="card-title" style="margin-bottom:16px;">데이터 관리</h3>
+<div class="card" style="margin-top:24px;margin-bottom:24px;"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px;margin-bottom:16px;"><h3 class="card-title">데이터 관리</h3><button class="btn feedback-tab" onclick="openFeedback()">의견함<span class="feedback-unread hidden" role="status" aria-label="읽지 않은 의견함 알림"></span></button></div>
     <div class="header-actions" id="headerTools">
       <button class="btn btn-sm" id="supabaseStatusBtn" onclick="openSupabaseModal()" title="수파베이스 클라우드 DB 연동 설정" style="display:inline-flex; align-items:center; gap:6px;">
         <span id="supabaseDot" style="display:inline-block; width:9px; height:9px; border-radius:50%; background:#94a3b8;"></span>
@@ -2165,11 +2167,12 @@
     }
 
     let attendanceAccess = false;
+    let attendanceUsername = '';
     let loginDestination = 'attendance';
 
     function clearManagementLogin() {
       closeFeedback();
-      document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent='';});
+      document.querySelectorAll('.feedback-unread').forEach(n=>n.classList.add('hidden'));
       isAdminLoggedIn = false;
       currentAdminUser = null;
       currentAdminRole = 'general';
@@ -2180,8 +2183,8 @@
 
     function showEntryScreen() {
       closeFeedback();
-      document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent='';});
       attendanceAccess = false;
+      attendanceUsername = '';
       clearManagementLogin();
       currentRole = 'entry';
       document.getElementById('entryView').classList.add('active');
@@ -2220,8 +2223,11 @@
       const label = type === 'master' ? '관리자' : '담당자';
       document.getElementById('adminLoginBadge').textContent = label + ' 인증';
       document.getElementById('loginTitle').textContent = label + ' 인증';
-      document.getElementById('loginDescription').textContent = '아이디와 비밀번호를 입력해 주세요.';
-      document.getElementById('adminUsernameInput').value = '';
+      const fixedUsername = type==='general' && loginDestination==='management' && attendanceAccess ? attendanceUsername : '';
+      document.getElementById('loginDescription').textContent = fixedUsername ? '비밀번호를 입력해 주세요.' : '아이디와 비밀번호를 입력해 주세요.';
+      const usernameInput = document.getElementById('adminUsernameInput');
+      usernameInput.value = fixedUsername;
+      usernameInput.readOnly = !!fixedUsername;
       document.getElementById('adminPasswordInput').value = '';
     }
 
@@ -2229,7 +2235,7 @@
       loginDestination = destination;
       selectLoginAdminType(type);
       document.getElementById('adminLoginModal').classList.remove('hidden');
-      document.getElementById('adminUsernameInput').focus();
+      document.getElementById(document.getElementById('adminUsernameInput').readOnly?'adminPasswordInput':'adminUsernameInput').focus();
     }
 
     function closeAdminLoginModal() {
@@ -2239,7 +2245,8 @@
     async function handleAdminLogin(event) {
       event.preventDefault();
       const type = document.getElementById('loginAdminRoleType').value;
-      const username = document.getElementById('adminUsernameInput').value.trim();
+      const username = type==='general' && loginDestination==='management' && attendanceAccess && attendanceUsername
+        ? attendanceUsername : document.getElementById('adminUsernameInput').value.trim();
       const password = document.getElementById('adminPasswordInput').value;
       try {
         if (!isSupabaseConnected && !(await initSupabaseClient())) throw new Error('데이터 연결을 확인해 주세요.');
@@ -2251,7 +2258,7 @@
         closeAdminLoginModal(); document.getElementById('adminPasswordInput').value='';
         currentAdminRole=type; currentAdminUser=result.account; isAdminLoggedIn=true;
         if (type==='master') switchRole('admin');
-        else { attendanceAccess=true; switchRole(loginDestination==='management'?'admin':'kiosk'); }
+        else { attendanceUsername=result.account.username; attendanceAccess=true; switchRole(loginDestination==='management'?'admin':'kiosk'); }
         setupRealtimeSubscription();
       } catch (err) { alert(err.message); }
     }
@@ -2469,7 +2476,7 @@
       try {
         const result = await secureRequest('feedback_count');
         if (token!==cloudToken || currentRole!=='admin') return;
-        document.querySelectorAll('.feedback-unread').forEach(n=>{n.textContent=result.count>0?'· 새 답변 '+result.count:'';});
+        document.querySelectorAll('.feedback-unread').forEach(n=>n.classList.toggle('hidden',!(result.count>0)));
       } catch (_) { /* 의견함 접속 시 연결 오류를 안내한다. */ }
     }
     function closeFeedback() {
@@ -2514,7 +2521,6 @@
           <button type="button" class="btn" data-id="${escapeHtml(item.id)}" onclick="openFeedbackItem(this.dataset.id)"
             style="display:flex;width:100%;justify-content:space-between;text-align:left;margin-bottom:8px;gap:12px;">
             <span style="min-width:0;overflow-wrap:anywhere;"><strong>${escapeHtml(item.title)}</strong>
-              ${currentAdminRole!=='master' && item.response_version>item.seen_version?'<span style="color:var(--color-sora-deep);font-size:12px;"> · 새 답변</span>':''}
               <span style="display:block;font-size:12px;color:var(--color-pencil-gray);font-weight:500;">${currentAdminRole==='master'?escapeHtml(item.author)+' · ':''}${escapeHtml(feedbackDate(item.created_at))}</span>
             </span><span style="white-space:nowrap;flex-shrink:0;font-size:13px;color:var(--color-sora-deep);">${escapeHtml(item.status)}</span>
           </button>`).join('');
@@ -2562,11 +2568,13 @@
         <div style="display:flex;justify-content:flex-end;margin-top:16px;">
           <button type="button" class="btn btn-sm btn-danger" id="feedbackDeleteButton" data-id="${escapeHtml(item.id)}" onclick="deleteFeedback(this.dataset.id)">삭제</button>
         </div>`;
-      if (currentAdminRole!=='master' && item.response_version>item.seen_version) {
+      if (currentAdminRole==='master' ? !item.admin_seen_at : item.response_version>item.seen_version) {
         try {
           await secureRequest('feedback_read',{id:item.id,version:item.response_version});
           if (token!==cloudToken) return;
-          item.seen_version=item.response_version;refreshFeedbackBadge();
+          if(currentAdminRole==='master')item.admin_seen_at=true;
+          else item.seen_version=item.response_version;
+          refreshFeedbackBadge();
         } catch(error) {if(token===cloudToken)document.getElementById('feedbackMessage').textContent=error.message;}
       }
     }

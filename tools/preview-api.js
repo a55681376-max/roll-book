@@ -26,7 +26,7 @@
       if(s.account.role!=='master' && s.scope!=='management')return fail('담당자 인증 후 이용해 주세요.');
       const owned=feedback.filter(f=>!f.deleted_at&&(s.account.role==='master'||f.author_id===s.account.id));
       if(action==='feedback_list')return ok({items:copy(owned).reverse()});
-      if(action==='feedback_count')return ok({count:feedback.filter(f=>!f.deleted_at&&f.author_id===s.account.id&&f.response_version>f.seen_version).length});
+      if(action==='feedback_count')return ok({count:owned.filter(f=>s.account.role==='master'?!f.admin_seen_at:f.response_version>f.seen_version).length});
       if(action==='feedback_create'){
         if(s.account.role!=='general')return fail('담당자만 의견을 보낼 수 있습니다.');
         if(!body.title?.trim()||body.title.length>100||!body.content?.trim()||body.content.length>5000)return fail('제목과 내용을 확인해 주세요.');
@@ -40,13 +40,14 @@
         item.deleted_at=new Date().toISOString();item.deleted_by=s.account.id;return ok();
       }
       if(action==='feedback_read'){
-        if(item.author_id===s.account.id)item.seen_version=Math.max(item.seen_version,Math.min(item.response_version,body.version||0));return ok();
+        if(s.account.role==='master')item.admin_seen_at=true;
+        else if(item.author_id===s.account.id)item.seen_version=Math.max(item.seen_version,Math.min(item.response_version,body.version||0));return ok();
       }
       if(action==='feedback_reply'){
         if(s.account.role!=='master')return fail('관리자만 답변할 수 있습니다.');
         if(body.version!==item.response_version)return fail('답변이 변경됐습니다. 목록을 다시 열어주세요.');
         if(!['접수','완료','보류','불가'].includes(body.status)||!body.reply?.trim()||body.reply.length>5000)return fail('상태와 답변을 입력해 주세요.');
-        Object.assign(item,{reply:body.reply.trim(),status:body.status,response_version:item.response_version+1,updated_at:new Date().toISOString()});return ok();
+        Object.assign(item,{reply:body.reply.trim(),status:body.status,admin_seen_at:true,response_version:item.response_version+1,updated_at:new Date().toISOString()});return ok();
       }
       return fail('지원하지 않는 요청입니다.');
     }

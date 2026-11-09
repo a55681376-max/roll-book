@@ -34,6 +34,10 @@ BEGIN
   r:=public.rollbook_feedback('feedback_create',first_token,'{"title":"테스트 의견","content":"실제 자료가 아닌 자동 검사입니다."}');
   IF r->>'ok'<>'true' THEN RAISE EXCEPTION 'Create failed: %',r; END IF;
   id:=r->>'id';
+  r:=public.rollbook_feedback('feedback_read',master_token,jsonb_build_object('id',id,'version',0));
+  IF r->>'ok'<>'true' OR NOT EXISTS(SELECT 1 FROM rollbook_private.feedback f WHERE f.id=feedback_test.id::uuid AND f.admin_seen_at IS NOT NULL) THEN
+    RAISE EXCEPTION 'Admin read receipt failed';
+  END IF;
   r:=public.rollbook_feedback('feedback_list',other_token,'{}');
   IF jsonb_array_length(r->'items')<>0 THEN RAISE EXCEPTION 'Cross-account list leak'; END IF;
   r:=public.rollbook_feedback('feedback_read',other_token,jsonb_build_object('id',id,'version',1));

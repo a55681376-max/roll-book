@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS rollbook_private.feedback (
 );
 ALTER TABLE rollbook_private.feedback ADD COLUMN IF NOT EXISTS deleted_at timestamptz;
 ALTER TABLE rollbook_private.feedback ADD COLUMN IF NOT EXISTS deleted_by text;
+ALTER TABLE rollbook_private.feedback ADD COLUMN IF NOT EXISTS admin_seen_at timestamptz;
 CREATE INDEX IF NOT EXISTS feedback_author_created ON rollbook_private.feedback(author_id,created_at DESC);
 ALTER TABLE rollbook_private.feedback ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS feedback_no_browser_access ON rollbook_private.feedback;
@@ -41,7 +42,8 @@ BEGIN
   END IF;
   IF action='feedback_count' THEN
     RETURN jsonb_build_object('ok',true,'count',(SELECT count(*) FROM rollbook_private.feedback
-      WHERE author_id=account.id AND deleted_at IS NULL AND response_version>seen_version));
+      WHERE deleted_at IS NULL AND (CASE WHEN account.role='master' THEN admin_seen_at IS NULL
+        ELSE author_id=account.id AND response_version>seen_version END)));
   ELSIF action='feedback_list' THEN
     SELECT coalesce(jsonb_agg(to_jsonb(f) ORDER BY f.created_at DESC,f.id),'[]'::jsonb) INTO items
       FROM (SELECT f.*,a.username AS author FROM rollbook_private.feedback f
@@ -76,7 +78,9 @@ BEGIN
       RETURN jsonb_build_object('ok',true);
     END IF;
     IF action='feedback_read' THEN
-      IF item.author_id=account.id THEN
+      IF account.role='master' THEN
+        UPDATE rollbook_private.feedback SET admin_seen_at=now() WHERE id=item.id AND admin_seen_at IS NULL;
+      ELSIF item.author_id=account.id THEN
         UPDATE rollbook_private.feedback SET seen_version=greatest(seen_version,least(response_version,coalesce((body->>'version')::integer,0))) WHERE id=item.id;
       END IF;
       RETURN jsonb_build_object('ok',true);
@@ -89,7 +93,7 @@ BEGIN
       length(btrim(coalesce(body->>'reply',''))) NOT BETWEEN 1 AND 5000 THEN
       RETURN jsonb_build_object('ok',false,'error','상태와 답변을 입력해 주세요.');
     END IF;
-    UPDATE rollbook_private.feedback SET status=body->>'status',reply=btrim(body->>'reply'),replied_by=account.username,
+    UPDATE rollbook_private.feedback SET status=body->>'status',reply=btrim(body->>'reply'),replied_by=account.username,admin_seen_at=coalesce(admin_seen_at,now()),
       response_version=response_version+1,updated_at=now() WHERE id=item.id;
     RETURN jsonb_build_object('ok',true);
   END IF;
